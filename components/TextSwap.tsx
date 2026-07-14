@@ -7,13 +7,26 @@ interface TextSwapProps {
   className?: string;
 }
 
+function usePrefersReducedMotion(): boolean {
+  if (typeof window === "undefined") return false;
+  const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+  return mq.matches;
+}
+
 export function TextSwap({ children, className }: TextSwapProps) {
   const ref  = useRef<HTMLSpanElement>(null);
   const prev = useRef(children);
+  const reduced = usePrefersReducedMotion();
 
   useEffect(() => {
     const el = ref.current;
     if (!el || prev.current === children) return;
+
+    if (reduced) {
+      el.textContent = children;
+      prev.current = children;
+      return;
+    }
 
     const dur = 150;
     el.classList.add("is-exit");
@@ -28,7 +41,7 @@ export function TextSwap({ children, className }: TextSwapProps) {
     }, dur);
 
     return () => clearTimeout(t);
-  }, [children]);
+  }, [children, reduced]);
 
   return (
     <span

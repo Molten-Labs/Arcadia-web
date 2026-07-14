@@ -390,7 +390,7 @@ export default function TraderProfilePage() {
                     <div className="flex items-center gap-2">
                       <ChromeText
                         as="h1"
-                        className="font-display text-[clamp(1.9rem,5vw,3rem)] leading-none font-extrabold tracking-[-0.03em] uppercase"
+                        className="font-display text-[clamp(1.9rem,5vw,3rem)] leading-none font-bold tracking-[-0.03em] uppercase"
                       >
                         @{trader.handle}
                       </ChromeText>

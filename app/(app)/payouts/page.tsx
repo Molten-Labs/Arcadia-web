@@ -270,7 +270,7 @@ export default function PayoutsPage() {
               {i > 0 && <div className="h-7 w-px shrink-0 bg-white/10" />}
               <div>
                 <MicroLabel className="mb-0.5 text-[0.5rem]">{item.label}</MicroLabel>
-                <p className={cn("font-mono text-sm font-extrabold tracking-tight", item.tone)}>
+                <p className={cn("font-mono text-sm font-bold tracking-tight", item.tone)}>
                   {item.value}
                 </p>
               </div>
@@ -286,7 +286,7 @@ export default function PayoutsPage() {
             <Panel className="p-5">
               <p className="mb-3.5 text-[0.7rem] text-faint">
                 Profit above HWM:{" "}
-                <span className="font-mono font-extrabold text-success">
+                <span className="font-mono font-bold text-success">
                   {formatUSD(MAX_WITHDRAWABLE)}
                 </span>
               </p>

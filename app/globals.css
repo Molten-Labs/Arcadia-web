@@ -215,7 +215,6 @@ body {
   top: -6px;
   right: -8px;
   pointer-events: none;
-  will-change: transform;
 }
 .t-badge[data-open="true"] {
   animation: t-badge-slide-in var(--badge-slide-dur) var(--badge-slide-ease);
@@ -242,6 +241,8 @@ body {
     transform var(--badge-pop-dur)  var(--badge-pop-ease),
     opacity   var(--badge-fade-dur) var(--badge-pop-ease),
     filter    var(--badge-pop-dur)  var(--badge-pop-ease);
+}
+.t-badge[data-open="true"] .t-badge-dot {
   will-change: transform, opacity, filter;
 }
 .t-badge[data-open="false"] .t-badge-dot {
@@ -325,6 +326,9 @@ body {
   transition:
     transform var(--dropdown-open-dur) var(--dropdown-ease),
     opacity   var(--dropdown-open-dur) var(--dropdown-ease);
+}
+.t-dropdown.is-open,
+.t-dropdown.is-closing {
   will-change: transform, opacity;
 }
 .t-dropdown[data-origin="top-right"]     { transform-origin: top right; }
@@ -365,6 +369,9 @@ body {
     transform var(--text-swap-dur) var(--text-swap-ease),
     filter    var(--text-swap-dur) var(--text-swap-ease),
     opacity   var(--text-swap-dur) var(--text-swap-ease);
+}
+.t-text-swap.is-exit,
+.t-text-swap.is-enter-start {
   will-change: transform, filter, opacity;
 }
 .t-text-swap.is-exit {
@@ -401,6 +408,8 @@ body {
     rotateY(var(--tilt-ry, 0deg));
   transform-style: preserve-3d;
   transition: transform var(--tilt-return) var(--tilt-return-ease);
+}
+.t-tilt-card.is-tilting {
   will-change: transform;
 }
 .t-tilt-card.is-tilting {
@@ -475,7 +484,7 @@ body {
 @keyframes acid-drift-3 { 0%,100% { transform: translate(0,0) scale(1); }    50% { transform: translate(4vw,-5vh) scale(1.1); } }
 @keyframes acid-pulse   { 0%,100% { opacity: 1; transform: scale(1); }       50% { opacity: 0.45; transform: scale(0.8); } }
 @keyframes acid-shimmer { 100% { transform: translateX(100%); } }
-@keyframes acid-glow    { 0%,100% { box-shadow: 0 0 22px rgba(204,255,0,0.35); } 50% { box-shadow: 0 0 40px rgba(204,255,0,0.6); } }
+
 @keyframes acid-breathe-organic {
   0%,100% { border-radius: 42% 58% 63% 37% / 45% 42% 58% 55%; }
   50%     { border-radius: 48% 52% 55% 45% / 52% 48% 52% 48%; }
@@ -509,9 +518,9 @@ body {
    consumers do not need their own guards. */
 .acid-int {
   transition:
-    transform 0.35s var(--acid-expo),
-    border-color 0.35s var(--acid-expo),
-    box-shadow 0.35s var(--acid-expo);
+    transform 0.2s var(--acid-expo),
+    border-color 0.2s var(--acid-expo),
+    box-shadow 0.2s var(--acid-expo);
 }
 @media (hover: hover) {
   .acid-int:hover,
@@ -572,7 +581,6 @@ body {
 }
 .hero-float {
   animation: hero-float 6s ease-in-out infinite;
-  will-change: transform;
 }
 
 @media (prefers-reduced-motion: reduce) {

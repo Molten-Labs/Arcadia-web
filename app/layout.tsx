@@ -14,6 +14,13 @@ export const metadata: Metadata = {
   title: { default: "Arcadia / Prove It.", template: "%s | Arcadia" },
   description: DESCRIPTION,
   applicationName: "Arcadia",
+  icons: {
+    icon: "/icon.svg",
+    apple: "/apple-icon",
+  },
+  alternates: {
+    canonical: "/",
+  },
   openGraph: {
     title: "Arcadia / Prove It.",
     description: DESCRIPTION,
@@ -35,7 +42,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning className={fontVariables}>
-      <body className="bg-void font-sans text-ink antialiased">
+      <body className="bg-void font-sans text-ink antialiased" suppressHydrationWarning>
         <Providers>{children}</Providers>
       </body>
     </html>

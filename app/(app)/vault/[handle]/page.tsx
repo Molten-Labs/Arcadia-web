@@ -118,7 +118,7 @@ export default function VaultPage() {
               <TraderAvatar handle={trader.handle} tier={trader.tier} size={56} />
               <div>
                 <div className="mb-1 flex flex-wrap items-center gap-2.5">
-                  <h1 className="font-display text-xl font-extrabold tracking-tight text-ink uppercase">
+                  <h1 className="font-display text-xl font-bold tracking-tight text-ink uppercase">
                     @{trader.handle}
                   </h1>
                   <TierChip tier={trader.tier} />

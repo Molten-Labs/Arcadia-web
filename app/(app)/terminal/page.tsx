@@ -38,7 +38,15 @@ type BottomTab = "positions" | "orders" | "history" | "funding";
 
 const MARKETS = ["BTC-PERP", "SOL-PERP", "ETH-PERP", "ARB-PERP"];
 const INTERVALS = ["1m", "5m", "15m", "1H", "4H", "1D"];
-const CHART_TOOLS = [Crosshair, BarChart2, TrendingUp, Circle, Square, Triangle, BookOpen];
+const CHART_TOOLS = [
+  { label: "Crosshair tool", icon: Crosshair },
+  { label: "Bar chart tool", icon: BarChart2 },
+  { label: "Trending up tool", icon: TrendingUp },
+  { label: "Circle tool", icon: Circle },
+  { label: "Square tool", icon: Square },
+  { label: "Triangle tool", icon: Triangle },
+  { label: "Book open tool", icon: BookOpen },
+] as const;
 
 function fmtCompact(n: number): string {
   if (n >= 1e9) return `$${(n / 1e9).toFixed(1)}B`;
@@ -190,6 +198,8 @@ function TerminalContent() {
           <button
             type="button"
             onClick={() => setMarketOpen(!marketOpen)}
+            aria-expanded={marketOpen}
+            aria-controls="market-dropdown"
             className="flex h-11 items-center gap-2 border-r border-line px-3 text-sm font-bold text-ink"
           >
             <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-acid text-[10px] font-black text-void">
@@ -203,6 +213,8 @@ function TerminalContent() {
           </button>
           {marketOpen && (
             <div
+              id="market-dropdown"
+              role="listbox"
               className="absolute top-full left-0 z-50 rounded-lg border border-line bg-panel-2 py-1 shadow-2xl"
               style={{ minWidth: 160 }}
             >
@@ -318,6 +330,8 @@ function TerminalContent() {
           <button
             type="button"
             onClick={() => (depositOpen ? closeDeposit() : openDeposit())}
+            aria-expanded={depositOpen}
+            aria-controls="deposit-dropdown"
             className="flex h-7 items-center gap-1 rounded bg-acid px-3 text-[10px] font-black text-void transition-all hover:opacity-90 active:scale-95 motion-reduce:transform-none"
             style={
               depositOpen
@@ -331,6 +345,7 @@ function TerminalContent() {
 
           {/* ── Deposit dropdown panel ── */}
           <div
+            id="deposit-dropdown"
             className={`t-dropdown${depositOpen ? " is-open" : ""}${depositClose ? " is-closing" : ""}`}
             data-origin="top-right"
             style={{
@@ -519,12 +534,12 @@ function TerminalContent() {
       <div className="flex min-h-0 flex-1 overflow-hidden">
         {/* Drawing tools sidebar */}
         <div className="flex w-9 shrink-0 flex-col items-center gap-0.5 border-r border-line bg-panel py-2">
-          {CHART_TOOLS.map((Icon, i) => (
+          {CHART_TOOLS.map(({ label, icon: Icon }) => (
             <button
-              key={i}
+              key={label}
               type="button"
               className="flex size-7 items-center justify-center rounded transition-colors hover:bg-panel-2"
-              aria-label="Chart tool"
+              aria-label={label}
             >
               <Icon size={12} className="text-faint" strokeWidth={1.5} />
             </button>
@@ -741,7 +756,7 @@ export default function TerminalPage() {
     // PhoenixProvider is route-scoped: the market-data WebSocket only opens
     // while the terminal is mounted, and closes on navigation away.
     <PhoenixProvider>
-      <Suspense fallback={<div className="h-screen w-full bg-void" />}>
+      <Suspense fallback={<div className="h-dvh w-full bg-void" />}>
         <TerminalContent />
       </Suspense>
     </PhoenixProvider>

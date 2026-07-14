@@ -189,12 +189,12 @@ export function TerminalOrderBook({ symbol, market }: { symbol: string; market: 
           </button>
         ))}
         <div className="flex items-center gap-0.5 px-1.5">
-          {[Layers, BarChart2].map((Icon, i) => (
+          {([["Layers", Layers], ["BarChart2", BarChart2]] as const).map(([label, Icon]) => (
             <button
-              key={i}
+              key={label}
               type="button"
               className="flex size-6 items-center justify-center rounded hover:bg-panel-2"
-              aria-label="Book view option"
+              aria-label={label === "Layers" ? "Toggle chart layers" : "Toggle bar chart"}
             >
               <Icon size={10} className="text-faint" />
             </button>

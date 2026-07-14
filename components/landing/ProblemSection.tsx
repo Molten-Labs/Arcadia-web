@@ -34,7 +34,7 @@ export function ProblemSection() {
                     <Icon aria-hidden className="size-4 transition-transform duration-300 ease-[cubic-bezier(0.19,1,0.22,1)] group-hover:scale-110 motion-reduce:transition-none motion-reduce:group-hover:transform-none" />
                     {panel.tag}
                   </span>
-                  <h3 className="mb-3.5 origin-left font-display text-[clamp(1.35rem,2.4vw,1.9rem)] font-extrabold tracking-[-0.02em] text-ink uppercase" style={{ transform: "scaleX(1.04)" }}>
+                  <h3 className="mb-3.5 origin-left font-display text-[clamp(1.35rem,2.4vw,1.9rem)] font-bold tracking-[-0.02em] text-ink uppercase" style={{ transform: "scaleX(1.04)" }}>
                     {panel.heading}
                   </h3>
                   <p className="mb-5 text-[1.02rem] leading-relaxed text-muted">{panel.body}</p>

@@ -2,8 +2,10 @@
 
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { motion } from "motion/react";
 import { ArrowRight } from "lucide-react";
 
+import { TiltCard } from "@/components/ui/tilt-card";
 import { useRole } from "@/lib/role-context";
 import { cn } from "@/lib/utils";
 
@@ -101,58 +103,74 @@ export function RoleGate() {
       {/* Two-panel split */}
       <div className="grid flex-1 grid-cols-1 overflow-hidden border-t border-line md:grid-cols-2">
         {ROLES.map((role, i) => (
-          <button
+          <motion.div
             key={role.id}
-            ref={i === 0 ? firstOptionRef : undefined}
-            type="button"
-            onClick={() => choose(role)}
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: i * 0.15, ease: [0.22, 1, 0.36, 1] }}
             className={cn(
-              "group relative flex flex-col justify-between p-8 text-left outline-none transition-colors sm:p-10",
-              "hover:bg-onyx hover:ring-1 hover:ring-acid/40 hover:ring-inset",
-              "focus-visible:bg-onyx focus-visible:ring-2 focus-visible:ring-acid focus-visible:ring-inset",
+              "flex",
               i === 0 && "border-b border-line md:border-r md:border-b-0",
             )}
           >
-            {/* Top */}
-            <div>
-              <span
+            <TiltCard
+              className="w-full"
+              maxTilt={6}
+              scale={1.015}
+              speed={300}
+            >
+              <button
+                ref={i === 0 ? firstOptionRef : undefined}
+                type="button"
+                onClick={() => choose(role)}
                 className={cn(
-                  "mb-8 inline-flex items-center gap-2 rounded border px-2.5 py-[3px]",
-                  role.badgeClass,
+                  "group flex w-full flex-col justify-between p-8 text-left outline-none transition-colors sm:p-10",
+                  "focus-visible:ring-2 focus-visible:ring-acid focus-visible:ring-inset focus-visible:rounded-[inherit]",
+                  "h-full",
                 )}
               >
-                <span className={cn("size-[5px] rounded-full", role.dotClass)} />
-                <span className={cn("font-mono text-[8px] font-bold tracking-[0.2em] uppercase", role.hueClass)}>
-                  {role.label}
-                </span>
-              </span>
+                {/* Top */}
+                <div>
+                  <span
+                    className={cn(
+                      "mb-8 inline-flex items-center gap-2 rounded border px-2.5 py-[3px]",
+                      role.badgeClass,
+                    )}
+                  >
+                    <span className={cn("size-[5px] rounded-full", role.dotClass)} />
+                    <span className={cn("font-mono text-[8px] font-bold tracking-[0.2em] uppercase", role.hueClass)}>
+                      {role.label}
+                    </span>
+                  </span>
 
-              <h2 className="m-0 mb-5 font-display text-[clamp(2rem,4vw,3.5rem)] font-bold leading-none tracking-[-0.04em] text-ink">
-                {role.headline}
-              </h2>
+                  <h2 className="m-0 mb-5 font-display text-[clamp(2rem,4vw,3.5rem)] font-bold leading-none tracking-[-0.04em] text-ink">
+                    {role.headline}
+                  </h2>
 
-              <p className="m-0 max-w-[36ch] text-[0.9375rem] leading-relaxed text-muted">
-                {role.body}
-              </p>
-            </div>
+                  <p className="m-0 max-w-[36ch] text-[0.9375rem] leading-relaxed text-muted">
+                    {role.body}
+                  </p>
+                </div>
 
-            {/* Bottom */}
-            <div className="mt-12 flex items-center justify-between border-t border-line pt-8">
-              <div>
-                <p className="mb-1 font-mono text-[8px] tracking-[0.2em] text-faint uppercase">Access</p>
-                <p className="font-mono text-[0.6875rem] text-muted">{role.access}</p>
-              </div>
-              <div
-                className={cn(
-                  "flex items-center gap-2 font-mono text-xs font-bold tracking-[0.02em]",
-                  role.hueClass,
-                )}
-              >
-                Continue
-                <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
-              </div>
-            </div>
-          </button>
+                {/* Bottom */}
+                <div className="mt-12 flex items-center justify-between border-t border-line pt-8">
+                  <div>
+                    <p className="mb-1 font-mono text-[8px] tracking-[0.2em] text-faint uppercase">Access</p>
+                    <p className="font-mono text-[0.6875rem] text-muted">{role.access}</p>
+                  </div>
+                  <div
+                    className={cn(
+                      "flex items-center gap-2 font-mono text-xs font-bold tracking-[0.02em]",
+                      role.hueClass,
+                    )}
+                  >
+                    Continue
+                    <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
+                  </div>
+                </div>
+              </button>
+            </TiltCard>
+          </motion.div>
         ))}
       </div>
 
