@@ -10,8 +10,11 @@ const HANDLE_MAP = Object.fromEntries(
 export async function GET() {
   const result = await proxyToBackend("/v1/leaderboard");
   if (result?.ok) {
-    const transformed = transformLeaderboard(result.data, HANDLE_MAP);
-    return NextResponse.json(transformed);
+    const raw = Array.isArray(result.data) ? result.data : [];
+    if (raw.length > 0) {
+      const transformed = transformLeaderboard(raw, HANDLE_MAP);
+      return NextResponse.json(transformed);
+    }
   }
   return NextResponse.json(MOCK_LEADERBOARD);
 }
