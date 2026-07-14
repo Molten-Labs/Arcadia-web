@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { CheckCircle, Clock, ExternalLink, Loader2, Wallet } from "lucide-react";
 
@@ -14,25 +15,34 @@ import {
   Panel,
   StatTile,
 } from "@/components/pages/trader/trader-ui";
-import { MOCK_TRADERS } from "@/lib/mock-data";
+import { apiFetch } from "@/lib/utils";
 import { formatUSD } from "@/lib/types";
 import { useArcadiaVault } from "@/lib/use-arcadia-vault";
-
-const DEMO_TRADER = MOCK_TRADERS[0];
+import type { TraderProfile } from "@/lib/types";
 
 const PENDING_PHASES = ["checking", "init-investor", "signing", "confirming"];
 
 export default function ManagePage() {
   const { connected, publicKey } = useWallet();
   const [selfFundAmount, setSelfFundAmount] = useState("");
-  const [depositsOpen, setDepositsOpen] = useState(DEMO_TRADER.deposits_open);
+  const [depositsOpen, setDepositsOpen] = useState(true);
 
   const { deposit, txState, resetTx } = useArcadiaVault();
 
-  const score = DEMO_TRADER.score;
+  const { data: profile } = useQuery<TraderProfile>({
+    queryKey: ["profile"],
+    queryFn: () => apiFetch("/profile"),
+    enabled: connected,
+  });
+
+  useEffect(() => {
+    if (profile) setDepositsOpen(profile.deposits_open);
+  }, [profile]);
+
+  const score = profile?.score ?? 0;
   const capacity = score * 1000;
-  const aum = DEMO_TRADER.aum;
-  const selfFunded = DEMO_TRADER.trader_self_funded;
+  const aum = profile?.aum ?? 0;
+  const selfFunded = profile?.trader_self_funded ?? 0;
   const capacityLeft = capacity - aum;
 
   const isPending = PENDING_PHASES.includes(txState.phase);
@@ -179,7 +189,7 @@ export default function ManagePage() {
             <MicroLabel className="mb-4">Vault Controls</MicroLabel>
             <div className="mb-6 space-y-0 text-xs">
               <DataRow label="Status">Active</DataRow>
-              <DataRow label="Score">{DEMO_TRADER.score}</DataRow>
+              <DataRow label="Score">{profile?.score ?? "—"}</DataRow>
               <DataRow label="Capacity formula">
                 {score} × $1,000 = {formatUSD(capacity, 0)}
               </DataRow>
