@@ -10,12 +10,15 @@ import {
   CheckCircle,
   Clock,
   ExternalLink,
+  FileText,
   Loader2,
+  User,
   Wallet,
   X,
 } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { useRole } from "@/lib/role-context";
 import { useArcadiaVault } from "@/lib/use-arcadia-vault";
 import { cn } from "@/lib/utils";
@@ -70,6 +73,9 @@ export function RoleGate() {
   const handleRef = useRef<HTMLInputElement>(null);
   const [step, setStep] = useState<"select" | "init">("select");
   const [handle, setHandle] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [bio, setBio] = useState("");
+  const [description, setDescription] = useState("");
   const [maxLev, setMaxLev] = useState("10");
 
   const isPending = PENDING_PHASES.includes(txState.phase);
@@ -82,6 +88,9 @@ export function RoleGate() {
     resetTx();
     if (!publicKey) return;
     setHandle(publicKey.toBase58().slice(0, 8));
+    setDisplayName("");
+    setBio("");
+    setDescription("");
   }, [showRoleGate, publicKey, resetTx]);
 
   useEffect(() => {
@@ -100,8 +109,19 @@ export function RoleGate() {
 
   const handleCreate = useCallback(() => {
     if (!handle.trim()) return;
+    const profileData = {
+      handle: handle.trim(),
+      displayName: displayName.trim() || handle.trim(),
+      bio: bio.trim(),
+      description: description.trim(),
+    };
+    if (typeof localStorage !== "undefined") {
+      try {
+        localStorage.setItem("arcadia_profile_data", JSON.stringify(profileData));
+      } catch {}
+    }
     initializeProfile(handle.trim(), Math.min(Math.max(Number(maxLev) || 10, 1), 20));
-  }, [handle, maxLev, initializeProfile]);
+  }, [handle, displayName, bio, description, maxLev, initializeProfile]);
 
   useEffect(() => {
     if (isSuccess) {
@@ -253,16 +273,61 @@ export function RoleGate() {
 
                   <div className="mb-4 space-y-3">
                     <div>
-                      <label htmlFor="init-handle" className="mb-1 block text-xs text-faint">Handle</label>
+                      <label htmlFor="init-display-name" className="mb-1 block text-xs text-faint">
+                        <User className="mr-1 inline size-3" />
+                        Display Name
+                      </label>
+                      <Input
+                        id="init-display-name"
+                        type="text"
+                        value={displayName}
+                        onChange={(e) => setDisplayName(e.target.value)}
+                        placeholder="e.g. Nova Trader"
+                        disabled={isPending}
+                        className="h-9 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="init-handle" className="mb-1 block text-xs text-faint">
+                        Handle (on-chain ID)
+                      </label>
                       <Input
                         id="init-handle"
                         ref={handleRef}
                         type="text"
                         value={handle}
                         onChange={(e) => setHandle(e.target.value)}
-                        placeholder="your handle"
+                        placeholder="your-handle"
                         disabled={isPending}
                         className="h-9 text-sm tabular-nums"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="init-bio" className="mb-1 block text-xs text-faint">
+                        <FileText className="mr-1 inline size-3" />
+                        Bio
+                      </label>
+                      <Input
+                        id="init-bio"
+                        type="text"
+                        value={bio}
+                        onChange={(e) => setBio(e.target.value)}
+                        placeholder="Short trading style description"
+                        disabled={isPending}
+                        className="h-9 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="init-description" className="mb-1 block text-xs text-faint">
+                        Strategy Description
+                      </label>
+                      <Textarea
+                        id="init-description"
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        placeholder="Describe your trading strategy, markets you trade, risk management approach..."
+                        disabled={isPending}
+                        className="min-h-[60px] text-sm"
                       />
                     </div>
                     <div>
@@ -299,7 +364,7 @@ export function RoleGate() {
                       className="flex w-full items-center justify-center gap-2 rounded-lg bg-acid py-2.5 text-xs font-black tracking-wide text-void transition-all hover:brightness-110 active:scale-[0.98] disabled:opacity-50 motion-reduce:transform-none"
                     >
                       {isPending && <Loader2 className="size-4 animate-spin" />}
-                      {isPending ? txState.message : "Create Profile (SOL fee)"}
+                      {isPending ? txState.message : "Create Profile on Solana"}
                     </button>
                   )}
 

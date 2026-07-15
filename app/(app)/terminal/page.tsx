@@ -27,6 +27,7 @@ import { TerminalOrderForm } from "@/components/pages/trader/TerminalOrderForm";
 import { TerminalTickerBar } from "@/components/pages/trader/TerminalTickerBar";
 import type { Direction, OrderType } from "@/components/pages/trader/terminal-types";
 import { PhoenixProvider, usePhoenix } from "@/lib/phoenix-context";
+import { useArcadiaVault } from "@/lib/use-arcadia-vault";
 import { formatUSD } from "@/lib/types";
 import type { OpenPosition } from "@/lib/types";
 
@@ -35,6 +36,21 @@ const TvChart = dynamic(() => import("@/components/TvChart").then((m) => m.TvCha
 });
 
 type BottomTab = "positions" | "orders" | "history" | "funding";
+
+interface ClosedTrade {
+  id: string;
+  market: string;
+  direction: "long" | "short";
+  size_usd: number;
+  leverage: number;
+  entry_px: number;
+  exit_px: number;
+  realized_pnl: number;
+  fees_usd: number;
+  opened_at: number;
+  closed_at: number;
+  was_liquidated: boolean;
+}
 
 const MARKETS = ["BTC-PERP", "SOL-PERP", "ETH-PERP", "ARB-PERP"];
 const INTERVALS = ["1m", "5m", "15m", "1H", "4H", "1D"];
@@ -56,9 +72,10 @@ function fmtCompact(n: number): string {
 }
 
 function TerminalContent() {
-  const { connected } = useWallet();
+  const { connected, publicKey } = useWallet();
   const searchParams = useSearchParams();
   const phoenix = usePhoenix();
+  const { recordTrade } = useArcadiaVault();
 
   const [market, setMarket] = useState("SOL-PERP");
   const [direction, setDirection] = useState<Direction>("long");
@@ -66,13 +83,14 @@ function TerminalContent() {
   const [sizeUSD, setSizeUSD] = useState("1000");
   const [leverage, setLeverage] = useState(5);
   const [positions, setPositions] = useState<OpenPosition[]>([]);
+  const [closedTrades, setClosedTrades] = useState<ClosedTrade[]>([]);
   const [closingId, setClosingId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [bottomTab, setBottomTab] = useState<BottomTab>("positions");
   const [interval, setInterval_] = useState("15m");
   const [marketOpen, setMarketOpen] = useState(false);
   const [indicator, setIndicator] = useState(false);
-  // Auto-open the deposit drawer on mount when ?deposit=1 is in the URL.
+
   const [depositOpen, setDepositOpen] = useState(
     () => searchParams.get("deposit") === "1",
   );
@@ -80,6 +98,9 @@ function TerminalContent() {
   const [depositAmt, setDepositAmt] = useState("1000");
   const [depositPhase, setDepositPhase] = useState<"idle" | "pending" | "done">("idle");
   const depositRef = useRef<HTMLDivElement>(null);
+
+  const [availableBalance] = useState(20000);
+  const [accountPnL, setAccountPnL] = useState(0);
 
   const symbol = market.replace("-PERP", "");
   const marketStats = phoenix.marketStats[symbol];
@@ -92,9 +113,6 @@ function TerminalContent() {
   const openInterest = marketStats?.openInterest ?? 0;
 
   const phoenixInterval = interval.toLowerCase();
-  // Depend on the stable callbacks, never the context object itself: the
-  // provider re-creates its value on every WS message, so listing `phoenix`
-  // here refires this effect per tick and stampedes the REST API into 429s.
   const { seedCandles, fetchMarketConfig } = phoenix;
   useEffect(() => {
     seedCandles(symbol, phoenixInterval);
@@ -122,7 +140,6 @@ function TerminalContent() {
     setTimeout(() => setDepositPhase("done"), 1400);
   }, []);
 
-  /* close deposit dropdown on outside click */
   useEffect(() => {
     function handleOutside(e: MouseEvent) {
       if (depositRef.current && !depositRef.current.contains(e.target as Node)) {
@@ -137,6 +154,9 @@ function TerminalContent() {
   const isBtc = market === "BTC-PERP";
   const dp = isBtc ? 1 : 3;
 
+  const totalMarginUsed = positions.reduce((sum, p) => sum + p.size_usd, 0);
+  const totalUnrealizedPnL = positions.reduce((sum, p) => sum + (p.upnl ?? 0), 0);
+
   useEffect(() => {
     const t = setInterval(() => {
       setPositions((prev) =>
@@ -150,6 +170,11 @@ function TerminalContent() {
           return { ...pos, upnl };
         }),
       );
+      setAccountPnL((prev) => {
+        const newPnL = prev + 0;
+        const posPnL = positions.reduce((s, p) => s + (p.upnl ?? 0), 0);
+        return posPnL + closedTrades.reduce((s, t) => s + t.realized_pnl, 0);
+      });
     }, 2000);
     return () => clearInterval(t);
   }, [phoenix.marketStats]);
@@ -175,13 +200,60 @@ function TerminalContent() {
     }, 700);
   }, [connected, currentPrice, market, direction, sizeUSD, leverage]);
 
-  const closePosition = (id: string) => {
-    setClosingId(id);
-    setTimeout(() => {
-      setPositions((p) => p.filter((x) => x.id !== id));
-      setClosingId(null);
-    }, 1000);
-  };
+  const closePosition = useCallback(
+    (id: string) => {
+      const pos = positions.find((p) => p.id === id);
+      if (!pos || !currentPrice) return;
+      setClosingId(id);
+
+      const stats = phoenix.marketStats[pos.market.replace("-PERP", "")];
+      const exitPx = stats?.markPx ?? pos.entry_px;
+      const pnl =
+        pos.direction === "long"
+          ? (pos.size_usd * pos.leverage * (exitPx - pos.entry_px)) / pos.entry_px
+          : (pos.size_usd * pos.leverage * (pos.entry_px - exitPx)) / pos.entry_px;
+      const fees = pos.size_usd * 0.0006;
+
+      const trade: ClosedTrade = {
+        id: `trade-${Date.now()}`,
+        market: pos.market,
+        direction: pos.direction,
+        size_usd: pos.size_usd,
+        leverage: pos.leverage,
+        entry_px: pos.entry_px,
+        exit_px: exitPx,
+        realized_pnl: pnl - fees,
+        fees_usd: fees,
+        opened_at: pos.opened_at,
+        closed_at: Math.floor(Date.now() / 1000),
+        was_liquidated: false,
+      };
+
+      setTimeout(() => {
+        setPositions((p) => p.filter((x) => x.id !== id));
+        setClosedTrades((prev) => [trade, ...prev.slice(0, 49)]);
+        setClosingId(null);
+
+        if (publicKey && recordTrade) {
+          const walletStr = publicKey.toBase58();
+          recordTrade({
+            profileAddress: walletStr,
+            market: trade.market,
+            direction: trade.direction,
+            sizeUsd: trade.size_usd,
+            leverageX100: Math.round(trade.leverage * 100),
+            entryPx: trade.entry_px,
+            exitPx: trade.exit_px,
+            feesUsd: trade.fees_usd,
+            wasLiquidated: false,
+            openedAt: trade.opened_at,
+            closedAt: trade.closed_at,
+          });
+        }
+      }, 1000);
+    },
+    [positions, currentPrice, publicKey, recordTrade, phoenix.marketStats],
+  );
 
   const spreadBps =
     currentPrice && oraclePrice ? ((currentPrice - oraclePrice) / oraclePrice) * 10000 : null;
@@ -193,7 +265,6 @@ function TerminalContent() {
     >
       {/* ── Market header bar ─────────────────────────────────────── */}
       <div className="flex h-11 shrink-0 items-center overflow-x-auto border-b border-line bg-panel">
-        {/* Market selector */}
         <div className="relative shrink-0">
           <button
             type="button"
@@ -248,7 +319,6 @@ function TerminalContent() {
           )}
         </div>
 
-        {/* Price */}
         {currentPrice && (
           <div className="flex shrink-0 items-center gap-2.5 border-r border-line px-4">
             <span
@@ -274,7 +344,6 @@ function TerminalContent() {
           </div>
         )}
 
-        {/* Market stats */}
         {[
           { label: "Oracle Price", value: oraclePrice ? oraclePrice.toFixed(dp) : "—" },
           { label: "24h Volume", value: dayNtlVlm > 0 ? fmtCompact(dayNtlVlm) : "—" },
@@ -322,7 +391,6 @@ function TerminalContent() {
 
         <div className="flex-1" />
 
-        {/* Right quick actions */}
         <div
           ref={depositRef}
           className="relative flex h-full shrink-0 items-center gap-1 border-l border-line px-2"
@@ -343,7 +411,6 @@ function TerminalContent() {
             Deposit
           </button>
 
-          {/* ── Deposit dropdown panel ── */}
           <div
             id="deposit-dropdown"
             className={`t-dropdown${depositOpen ? " is-open" : ""}${depositClose ? " is-closing" : ""}`}
@@ -447,7 +514,7 @@ function TerminalContent() {
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] text-faint">Wallet balance</span>
                     <span className="text-[10px] font-bold tabular-nums text-ink">
-                      $20,000.00 USDC
+                      ${availableBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDC
                     </span>
                   </div>
 
@@ -532,7 +599,6 @@ function TerminalContent() {
 
       {/* ── Main row ──────────────────────────────────────────────── */}
       <div className="flex min-h-0 flex-1 overflow-hidden">
-        {/* Drawing tools sidebar */}
         <div className="flex w-9 shrink-0 flex-col items-center gap-0.5 border-r border-line bg-panel py-2">
           {CHART_TOOLS.map(({ label, icon: Icon }) => (
             <button
@@ -546,7 +612,6 @@ function TerminalContent() {
           ))}
         </div>
 
-        {/* Chart */}
         <div className="relative min-w-0 flex-1 overflow-hidden">
           <TvChart
             market={market}
@@ -568,12 +633,10 @@ function TerminalContent() {
           </div>
         </div>
 
-        {/* Order book / Trades */}
         <div className="w-52 shrink-0 overflow-hidden">
           <TerminalOrderBook symbol={symbol} market={market} />
         </div>
 
-        {/* Order form */}
         <div className="w-64 shrink-0 overflow-hidden">
           <TerminalOrderForm
             direction={direction}
@@ -591,11 +654,14 @@ function TerminalContent() {
             connected={connected}
             market={market}
             openDeposit={openDeposit}
+            availableBalance={availableBalance}
+            totalMarginUsed={totalMarginUsed}
+            totalUnrealizedPnL={totalUnrealizedPnL}
           />
         </div>
       </div>
 
-      {/* ── Bottom panel (positions / orders / history) ─────────── */}
+      {/* ── Bottom panel ──────────────────────────────────────────── */}
       <div
         className="flex shrink-0 flex-col border-t border-line bg-panel"
         style={{ height: 190 }}
@@ -604,8 +670,8 @@ function TerminalContent() {
           {(
             [
               ["positions", `Positions (${positions.length})`],
+              ["history", `Trade History (${closedTrades.length})`],
               ["orders", "Open Orders (0)"],
-              ["history", "Trade History"],
               ["funding", "Funding History"],
             ] as const
           ).map(([t, label]) => {
@@ -735,17 +801,100 @@ function TerminalContent() {
                 </tbody>
               </table>
             ))}
+
+          {bottomTab === "history" &&
+            (closedTrades.length === 0 ? (
+              <div className="flex h-full flex-col items-center justify-center gap-1.5">
+                <Activity size={18} className="text-faint opacity-50" />
+                <p className="text-xs text-faint">No trade history yet. Open and close a position to see it here.</p>
+              </div>
+            ) : (
+              <table className="w-full text-xs">
+                <thead className="sticky top-0 bg-panel">
+                  <tr className="border-b border-line">
+                    {["Time", "Market", "Side", "Size", "Lev.", "Entry", "Exit", "PnL", "Fees"].map(
+                      (h) => (
+                        <th
+                          key={h}
+                          className="px-3 py-1.5 text-left text-[10px] font-medium text-faint"
+                        >
+                          {h}
+                        </th>
+                      ),
+                    )}
+                  </tr>
+                </thead>
+                <tbody>
+                  {closedTrades.map((trade) => {
+                    const profit = trade.realized_pnl >= 0;
+                    return (
+                      <tr key={trade.id} className="border-b border-line transition-colors hover:bg-panel-2">
+                        <td className="px-3 py-2 text-[10px] tabular-nums text-muted">
+                          {new Date(trade.closed_at * 1000).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            second: "2-digit",
+                          })}
+                        </td>
+                        <td className="px-3 py-2 font-semibold text-ink">{trade.market}</td>
+                        <td className="px-3 py-2">
+                          <span
+                            className="rounded px-1.5 py-0.5 text-[10px] font-bold uppercase"
+                            style={{
+                              background:
+                                trade.direction === "long"
+                                  ? "color-mix(in srgb, var(--color-success) 12%, transparent)"
+                                  : "color-mix(in srgb, var(--color-danger) 12%, transparent)",
+                              color:
+                                trade.direction === "long"
+                                  ? "var(--color-success)"
+                                  : "var(--color-danger)",
+                            }}
+                          >
+                            {trade.direction}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2 tabular-nums text-muted">
+                          {formatUSD(trade.size_usd, 0)}
+                        </td>
+                        <td className="px-3 py-2 font-semibold tabular-nums text-acid">
+                          {trade.leverage}x
+                        </td>
+                        <td className="px-3 py-2 tabular-nums text-muted">
+                          {trade.entry_px.toFixed(isBtc ? 0 : dp)}
+                        </td>
+                        <td className="px-3 py-2 tabular-nums text-ink">
+                          {trade.exit_px.toFixed(isBtc ? 0 : dp)}
+                        </td>
+                        <td
+                          className="px-3 py-2 font-semibold tabular-nums"
+                          style={{
+                            color: profit ? "var(--color-success)" : "var(--color-danger)",
+                          }}
+                        >
+                          {profit ? "+" : ""}
+                          {formatUSD(trade.realized_pnl, 0)}
+                        </td>
+                        <td className="px-3 py-2 tabular-nums text-faint">
+                          {formatUSD(trade.fees_usd, 0)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            ))}
+
           {bottomTab === "funding" && <TerminalFundingPanel symbol={symbol} />}
-          {(bottomTab === "orders" || bottomTab === "history") && (
+          {bottomTab === "orders" && (
             <div className="flex h-full flex-col items-center justify-center gap-1.5">
               <Activity size={18} className="text-faint opacity-50" />
-              <p className="text-xs text-faint">No {bottomTab} data</p>
+              <p className="text-xs text-faint">No orders data</p>
             </div>
           )}
         </div>
       </div>
 
-      {/* ── Live ticker bar ───────────────────────────────────────── */}
       <TerminalTickerBar marketStats={phoenix.marketStats} />
     </div>
   );
@@ -753,8 +902,6 @@ function TerminalContent() {
 
 export default function TerminalPage() {
   return (
-    // PhoenixProvider is route-scoped: the market-data WebSocket only opens
-    // while the terminal is mounted, and closes on navigation away.
     <PhoenixProvider>
       <Suspense fallback={<div className="h-dvh w-full bg-void" />}>
         <TerminalContent />

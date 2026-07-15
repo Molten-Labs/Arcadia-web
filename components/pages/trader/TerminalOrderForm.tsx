@@ -22,6 +22,9 @@ export function TerminalOrderForm({
   connected,
   market,
   openDeposit,
+  availableBalance = 20000,
+  totalMarginUsed = 0,
+  totalUnrealizedPnL = 0,
 }: {
   direction: Direction;
   setDirection: (d: Direction) => void;
@@ -38,6 +41,9 @@ export function TerminalOrderForm({
   connected: boolean;
   market: string;
   openDeposit: () => void;
+  availableBalance?: number;
+  totalMarginUsed?: number;
+  totalUnrealizedPnL?: number;
 }) {
   const [tpslEnabled, setTpslEnabled] = useState(false);
   const [reduceOnly, setReduceOnly] = useState(false);
@@ -352,10 +358,10 @@ export function TerminalOrderForm({
         <p className="mb-2 text-[9px] font-black tracking-widest text-faint uppercase">Account</p>
         <div className="space-y-1">
           {[
-            ["Available", "$20,000.00", "var(--color-ink)"],
-            ["Margin Used", "$0.00", "var(--color-ink)"],
-            ["Margin Ratio", "—", "var(--color-ink)"],
-            ["Unrealized PnL", "+$0.00", "var(--color-success)"],
+            ["Available", `$${availableBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, "var(--color-ink)"],
+            ["Margin Used", formatUSD(totalMarginUsed, 0), "var(--color-ink)"],
+            ["Margin Ratio", totalMarginUsed > 0 ? `${((totalMarginUsed / availableBalance) * 100).toFixed(1)}%` : "—", "var(--color-ink)"],
+            ["Unrealized PnL", `${totalUnrealizedPnL >= 0 ? "+" : ""}${formatUSD(totalUnrealizedPnL, 0)}`, totalUnrealizedPnL >= 0 ? "var(--color-success)" : "var(--color-danger)"],
           ].map(([k, v, c]) => (
             <div key={k} className="flex items-center justify-between">
               <span className="text-[10px] text-faint">{k}</span>
