@@ -82,8 +82,14 @@ function TerminalContent() {
   const [orderType, setOrderType] = useState<OrderType>("Market");
   const [sizeUSD, setSizeUSD] = useState("1000");
   const [leverage, setLeverage] = useState(5);
-  const [positions, setPositions] = useState<OpenPosition[]>([]);
-  const [closedTrades, setClosedTrades] = useState<ClosedTrade[]>([]);
+  const [positions, setPositions] = useState<OpenPosition[]>([
+    { id: "demo-1", market: "SOL-PERP", direction: "long", size_usd: 2000, leverage: 5, entry_px: 160.0, opened_at: Math.floor(Date.now() / 1000) - 7200, upnl: 0 },
+    { id: "demo-2", market: "BTC-PERP", direction: "short", size_usd: 3000, leverage: 3, entry_px: 98700, opened_at: Math.floor(Date.now() / 1000) - 3600, upnl: 0 },
+  ]);
+  const [closedTrades, setClosedTrades] = useState<ClosedTrade[]>([
+    { id: "hist-1", market: "ETH-PERP", direction: "short", size_usd: 1500, leverage: 10, entry_px: 3420, exit_px: 3385, realized_pnl: 153.5, fees_usd: 0.90, opened_at: Math.floor(Date.now() / 1000) - 86400, closed_at: Math.floor(Date.now() / 1000) - 43200, was_liquidated: false },
+    { id: "hist-2", market: "SOL-PERP", direction: "long", size_usd: 2500, leverage: 5, entry_px: 155.2, exit_px: 162.45, realized_pnl: 583.7, fees_usd: 1.50, opened_at: Math.floor(Date.now() / 1000) - 172800, closed_at: Math.floor(Date.now() / 1000) - 86400, was_liquidated: false },
+  ]);
   const [closingId, setClosingId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [bottomTab, setBottomTab] = useState<BottomTab>("positions");
@@ -99,8 +105,8 @@ function TerminalContent() {
   const [depositPhase, setDepositPhase] = useState<"idle" | "pending" | "done">("idle");
   const depositRef = useRef<HTMLDivElement>(null);
 
-  const [availableBalance] = useState(20000);
-  const [accountPnL, setAccountPnL] = useState(0);
+  const [availableBalance] = useState(25000);
+  const [accountPnL, setAccountPnL] = useState(737.2);
 
   const symbol = market.replace("-PERP", "");
   const marketStats = phoenix.marketStats[symbol];
@@ -170,10 +176,12 @@ function TerminalContent() {
           return { ...pos, upnl };
         }),
       );
-      setAccountPnL((prev) => {
-        const newPnL = prev + 0;
-        const posPnL = positions.reduce((s, p) => s + (p.upnl ?? 0), 0);
-        return posPnL + closedTrades.reduce((s, t) => s + t.realized_pnl, 0);
+      setAccountPnL(() => {
+        let posPnL = 0;
+        setPositions((p) => { posPnL = p.reduce((s, pos) => s + (pos.upnl ?? 0), 0); return p; });
+        let closedPnL = 0;
+        setClosedTrades((c) => { closedPnL = c.reduce((s, t) => s + t.realized_pnl, 0); return c; });
+        return posPnL + closedPnL;
       });
     }, 2000);
     return () => clearInterval(t);
@@ -203,10 +211,11 @@ function TerminalContent() {
   const closePosition = useCallback(
     (id: string) => {
       const pos = positions.find((p) => p.id === id);
-      if (!pos || !currentPrice) return;
+      if (!pos) return;
       setClosingId(id);
 
-      const stats = phoenix.marketStats[pos.market.replace("-PERP", "")];
+      const posMarket = pos.market.replace("-PERP", "");
+      const stats = phoenix.marketStats[posMarket];
       const exitPx = stats?.markPx ?? pos.entry_px;
       const pnl =
         pos.direction === "long"
@@ -248,11 +257,11 @@ function TerminalContent() {
             wasLiquidated: false,
             openedAt: trade.opened_at,
             closedAt: trade.closed_at,
-          });
+          }).catch(() => {});
         }
       }, 1000);
     },
-    [positions, currentPrice, publicKey, recordTrade, phoenix.marketStats],
+    [positions, publicKey, recordTrade, phoenix.marketStats],
   );
 
   const spreadBps =

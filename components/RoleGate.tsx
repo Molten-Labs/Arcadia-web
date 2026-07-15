@@ -72,6 +72,7 @@ export function RoleGate() {
   const firstOptionRef = useRef<HTMLButtonElement>(null);
   const handleRef = useRef<HTMLInputElement>(null);
   const [step, setStep] = useState<"select" | "init">("select");
+  const [chosenRole, setChosenRole] = useState<RoleId | null>(null);
   const [handle, setHandle] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [bio, setBio] = useState("");
@@ -85,6 +86,7 @@ export function RoleGate() {
   useEffect(() => {
     if (!showRoleGate) return;
     setStep("select");
+    setChosenRole(null);
     resetTx();
     if (!publicKey) return;
     setHandle(publicKey.toBase58().slice(0, 8));
@@ -124,19 +126,21 @@ export function RoleGate() {
   }, [handle, displayName, bio, description, maxLev, initializeProfile]);
 
   useEffect(() => {
-    if (isSuccess) {
+    if (isSuccess && chosenRole) {
+      setRole(chosenRole);
       const t = setTimeout(() => router.push("/terminal"), 1200);
       return () => clearTimeout(t);
     }
-  }, [isSuccess, router]);
+  }, [isSuccess, chosenRole, setRole, router]);
 
   if (!showRoleGate) return null;
 
   function choose(role: RoleOption) {
-    setRole(role.id);
+    setChosenRole(role.id);
     if (role.id === "trader") {
       setStep("init");
     } else {
+      setRole(role.id);
       router.push(role.route);
     }
   }
@@ -233,7 +237,7 @@ export function RoleGate() {
             >
               <button
                 type="button"
-                onClick={() => { setStep("select"); resetTx(); }}
+                onClick={() => { setStep("select"); setChosenRole(null); resetTx(); }}
                 className="mb-4 inline-flex items-center gap-1 text-xs text-faint hover:text-ink transition-colors"
               >
                 <ArrowLeft className="size-3" />
