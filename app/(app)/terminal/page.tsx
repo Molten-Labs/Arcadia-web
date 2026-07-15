@@ -273,7 +273,7 @@ function TerminalContent() {
       style={{ height: "calc(100vh - 48px)" }}
     >
       {/* ── Market header bar ─────────────────────────────────────── */}
-      <div className="flex h-11 shrink-0 items-center overflow-x-auto border-b border-line bg-panel">
+      <div className="flex h-11 shrink-0 items-center overflow-visible border-b border-line bg-panel">
         <div className="relative shrink-0">
           <button
             type="button"
