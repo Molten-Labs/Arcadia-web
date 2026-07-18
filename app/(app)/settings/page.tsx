@@ -159,7 +159,7 @@ export default function SettingsPage() {
 
   const switchRole = (next: "trader" | "investor") => {
     setRole(next);
-    router.push(next === "trader" ? "/terminal" : "/dashboard");
+    router.push(next === "trader" ? "/dashboard" : "/portfolio");
   };
 
   const walletAddr = publicKey?.toBase58() ?? "";

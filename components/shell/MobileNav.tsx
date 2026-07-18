@@ -43,12 +43,14 @@ export function MobileNav() {
   const pathname = usePathname();
   const hydrated = useHydrated();
   const wallet = useWallet();
-  const { role: rawRole } = useRole();
+  const { role: rawRole, handle: rawHandle } = useRole();
 
   if (!hydrated) return null;
 
   const connected = wallet.connected;
   const role = rawRole;
+  const handle = rawHandle;
+  void handle; // reserved for future profile-active highlighting
   const items = getMobileLinks(role, connected);
 
   return (

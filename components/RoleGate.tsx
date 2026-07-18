@@ -55,7 +55,7 @@ const ROLES: RoleOption[] = [
     headline: "I allocate.",
     body: "Browse verified traders, deposit into vaults, and monitor your portfolio NAV and returns across the marketplace.",
     access: "Marketplace / Portfolio / Returns / History",
-    route: "/dashboard",
+    route: "/portfolio",
     dotClass: "bg-cyan",
     hueClass: "text-cyan",
     badgeClass: "border-cyan/25 bg-cyan/[0.06]",
@@ -66,7 +66,7 @@ const PENDING_PHASES = ["checking", "init-investor", "signing", "confirming"];
 
 export function RoleGate() {
   const { publicKey, connected } = useWallet();
-  const { showRoleGate, setRole, dismissRoleGate } = useRole();
+  const { showRoleGate, setRole, setHandle: setRoleHandle, dismissRoleGate } = useRole();
   const { initializeProfile, txState, resetTx } = useArcadiaVault();
   const router = useRouter();
   const firstOptionRef = useRef<HTMLButtonElement>(null);
@@ -123,15 +123,20 @@ export function RoleGate() {
       } catch {}
     }
     initializeProfile(handle.trim(), Math.min(Math.max(Number(maxLev) || 10, 1), 20));
-  }, [handle, displayName, bio, description, maxLev, initializeProfile]);
+    setRoleHandle(handle.trim());
+  }, [handle, displayName, bio, description, maxLev, initializeProfile, setRoleHandle]);
 
   useEffect(() => {
     if (isSuccess && chosenRole) {
       setRole(chosenRole);
-      const t = setTimeout(() => router.push("/terminal"), 1200);
+      if (chosenRole === "trader") {
+        const t = setTimeout(() => router.push(`/t/${handle.trim()}`), 1200);
+        return () => clearTimeout(t);
+      }
+      const t = setTimeout(() => router.push("/portfolio"), 1200);
       return () => clearTimeout(t);
     }
-  }, [isSuccess, chosenRole, setRole, router]);
+  }, [isSuccess, chosenRole, setRole, setRoleHandle, router, handle]);
 
   if (!showRoleGate) return null;
 

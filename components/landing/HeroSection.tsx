@@ -133,13 +133,6 @@ export function HeroSection() {
 
             <div className="max-w-[52ch]">
               <Reveal delay={160}>
-                <p className="mb-4 inline-flex items-center gap-2.5 font-mono text-[0.72rem] tracking-[0.16em] text-muted uppercase">
-                  <span
-                    className="acid-animate h-2 w-2 rounded-full bg-success"
-                    style={{ boxShadow: "0 0 10px var(--color-success)", animation: "acid-pulse 2s infinite" }}
-                  />
-                  Verified reputation / On-chain allocation
-                </p>
                 <p className="mb-7 text-[clamp(1.05rem,1.7vw,1.28rem)] leading-[1.55] text-muted">
                   Arcadia turns real{" "}
                   <b className="font-semibold text-ink">on-chain trading history</b>{" "}

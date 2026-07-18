@@ -63,16 +63,17 @@ export function Sidebar() {
   const pathname = usePathname();
   const hydrated = useHydrated();
   const wallet = useWallet();
-  const { role: rawRole } = useRole();
+  const { role: rawRole, handle: rawHandle } = useRole();
 
   const connected = hydrated && wallet.connected;
   const role = hydrated ? rawRole : null;
+  const handle = hydrated ? rawHandle : null;
   const publicKey = hydrated ? wallet.publicKey : null;
 
   const navLinks = getNavLinks(role, connected);
   const primaryLinks = navLinks.filter((l) => l.primary);
   const secondaryLinks = navLinks.filter((l) => !l.primary);
-  const homeHref = getHomeHref(role, connected);
+  const homeHref = getHomeHref(role, connected, handle);
 
   const base58 = publicKey?.toBase58();
   const initial = base58 ? base58.slice(0, 1).toUpperCase() : "?";

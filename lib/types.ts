@@ -169,6 +169,9 @@ export interface OpenPosition {
   entry_px: number;
   opened_at: number;
   upnl?: number;
+  takeProfit?: number;
+  stopLoss?: number;
+  liquidation?: number;
 }
 
 export interface AuthChallenge {

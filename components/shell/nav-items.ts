@@ -1,13 +1,10 @@
 import {
-  BarChart2,
   Briefcase,
   DollarSign,
   Home,
   LayoutDashboard,
   Settings,
-  Shield,
   Terminal,
-  TrendingUp,
   Trophy,
   Users,
   type LucideIcon,
@@ -30,12 +27,9 @@ export type NavLink = {
 };
 
 const TRADER_NAV: NavLink[] = [
-  { href: "/terminal", icon: Terminal, label: "Terminal", primary: true },
-  { href: "/analytics", icon: TrendingUp, label: "Analytics", primary: true },
-  { href: "/reputation", icon: Shield, label: "Reputation", primary: true },
-  { href: "/payouts", icon: DollarSign, label: "Payouts", primary: true },
   { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard", primary: true },
-  { href: "/manage", icon: BarChart2, label: "Manage Vault", primary: true },
+  { href: "/terminal", icon: Terminal, label: "Terminal", primary: true },
+  { href: "/payouts", icon: DollarSign, label: "Payouts", primary: true },
   { href: "/traders", icon: Users, label: "Traders", primary: false },
   { href: "/leaderboard", icon: Trophy, label: "Leaderboard", primary: false },
 ];
@@ -73,10 +67,20 @@ export function getNavLinks(role: ArcadiaRole, connected: boolean): NavLink[] {
   return GUEST_NAV;
 }
 
-/** Role-aware home target: traders land on the terminal, investors on their portfolio. */
-export function getHomeHref(role: ArcadiaRole, connected: boolean): string {
+/**
+ * Role-aware home target. Connected traders land on their public profile; if
+ * we don't yet know their handle, we fall back to the dashboard (which itself
+ * redirects to /t/<handle> once the profile is fetched). The logo uses this
+ * too so a single click always returns the trader to their own page.
+ */
+export function getHomeHref(
+  role: ArcadiaRole,
+  connected: boolean,
+  handle?: string | null,
+): string {
   if (!connected || !role) return "/";
-  return role === "trader" ? "/terminal" : "/portfolio";
+  if (role === "trader") return handle ? `/t/${handle}` : "/dashboard";
+  return "/portfolio";
 }
 
 /** Mobile bottom-bar items: guests get 3, connected get 4 primary + More. */

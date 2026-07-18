@@ -14,14 +14,18 @@ export type ArcadiaRole = "trader" | "investor" | null;
 
 interface RoleContextValue {
   role: ArcadiaRole;
+  handle: string | null;
   setRole: (r: "trader" | "investor") => void;
+  setHandle: (h: string) => void;
   showRoleGate: boolean;
   dismissRoleGate: () => void;
 }
 
 const RoleContext = createContext<RoleContextValue>({
   role: null,
+  handle: null,
   setRole: () => {},
+  setHandle: () => {},
   showRoleGate: false,
   dismissRoleGate: () => {},
 });
@@ -33,11 +37,17 @@ export function useRole() {
 /* ── localStorage-backed role store ─────────────────────────────────── */
 
 const STORAGE_KEY = "arcadia_role";
+const HANDLE_KEY = "arcadia_handle";
 const ROLE_EVENT = "arcadia-role-change";
 
 function getRoleSnapshot(): ArcadiaRole {
   const stored = localStorage.getItem(STORAGE_KEY);
   return stored === "trader" || stored === "investor" ? stored : null;
+}
+
+function getHandleSnapshot(): string | null {
+  const stored = localStorage.getItem(HANDLE_KEY);
+  return stored && stored.length > 0 ? stored : null;
 }
 
 function subscribeRole(onChange: () => void) {
@@ -58,6 +68,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
   const walletAdapter = useWallet();
   const hydrated = useSyncExternalStore(noopSubscribe, () => true, () => false);
   const role = useSyncExternalStore(subscribeRole, getRoleSnapshot, () => null);
+  const handle = useSyncExternalStore(subscribeRole, getHandleSnapshot, () => null);
 
   // The gate is derived, not stored: first wallet connection with no role
   // chosen shows it, until the user picks a role or dismisses it for this key.
@@ -75,12 +86,21 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     window.dispatchEvent(new Event(ROLE_EVENT));
   }, []);
 
+  const setHandle = useCallback((h: string) => {
+    if (h && h.length > 0) {
+      localStorage.setItem(HANDLE_KEY, h);
+    } else {
+      localStorage.removeItem(HANDLE_KEY);
+    }
+    window.dispatchEvent(new Event(ROLE_EVENT));
+  }, []);
+
   const dismissRoleGate = useCallback(() => {
     setDismissedForKey(currentKey);
   }, [currentKey]);
 
   return (
-    <RoleContext.Provider value={{ role, setRole, showRoleGate, dismissRoleGate }}>
+    <RoleContext.Provider value={{ role, handle, setRole, setHandle, showRoleGate, dismissRoleGate }}>
       {children}
     </RoleContext.Provider>
   );

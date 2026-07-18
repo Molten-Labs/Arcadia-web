@@ -1,10 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Minus, Plus, Zap } from "lucide-react";
 
 import { TextSwap } from "@/components/TextSwap";
 import { formatUSD } from "@/lib/types";
+import {
+  MARGIN_MODES,
+  TIF_OPTIONS,
+  type MarginMode,
+  type OrderPreview,
+  type SubmittedOrder,
+  type TimeInForce,
+} from "./terminal-types";
 import type { Direction, OrderType } from "./terminal-types";
 
 export function TerminalOrderForm({
@@ -25,6 +33,7 @@ export function TerminalOrderForm({
   availableBalance = 20000,
   totalMarginUsed = 0,
   totalUnrealizedPnL = 0,
+  onPreviewChange,
 }: {
   direction: Direction;
   setDirection: (d: Direction) => void;
@@ -36,7 +45,8 @@ export function TerminalOrderForm({
   setLeverage: (v: number) => void;
   currentPrice?: number;
   oraclePrice?: number;
-  onSubmit: () => void;
+  onSubmit: (order: SubmittedOrder) => void;
+  onPreviewChange?: (preview: OrderPreview | null) => void;
   submitting: boolean;
   connected: boolean;
   market: string;
@@ -51,6 +61,8 @@ export function TerminalOrderForm({
   const [slPrice, setSlPrice] = useState("");
   const [limitPrice, setLimitPrice] = useState("");
   const [focusPct, setFocusPct] = useState<number | null>(null);
+  const [tif, setTif] = useState<TimeInForce>("GTC");
+  const [marginMode, setMarginMode] = useState<MarginMode>("cross");
 
   const notional = (parseFloat(sizeUSD) || 0) * leverage;
   const fee = notional * 0.0004;
@@ -61,9 +73,60 @@ export function TerminalOrderForm({
       : currentPrice + liqDist
     : 0;
 
-  const MARGIN_AVAIL = 20_000;
+  const MARGIN_AVAIL = availableBalance;
   const pctButtons = [10, 25, 50, 75, 100];
   const isLong = direction === "long";
+
+  const sizeNum = parseFloat(sizeUSD) || 0;
+  const overBalance = sizeNum > availableBalance;
+  const sizeInvalid = sizeNum <= 0;
+  const limitInvalid = orderType === "Limit" && !(parseFloat(limitPrice) > 0);
+  const disabled = !connected || submitting || sizeInvalid || overBalance || limitInvalid;
+
+  // Publish a live preview to the parent so the chart can render the lines
+  // while the user edits. Cleared on unmount or when the form is invalid.
+  useEffect(() => {
+    if (!onPreviewChange) return;
+    const tp = tpslEnabled && tpPrice ? parseFloat(tpPrice) : undefined;
+    const sl = tpslEnabled && slPrice ? parseFloat(slPrice) : undefined;
+    const lp = orderType === "Limit" && limitPrice ? parseFloat(limitPrice) : undefined;
+    const liq = leverage > 1 && liqPrice > 0 ? liqPrice : undefined;
+    onPreviewChange({
+      direction,
+      orderType,
+      limitPrice: lp,
+      takeProfit: tp,
+      stopLoss: sl,
+      liquidation: liq,
+    });
+    return () => onPreviewChange(null);
+  }, [
+    onPreviewChange,
+    direction,
+    orderType,
+    tpslEnabled,
+    tpPrice,
+    slPrice,
+    limitPrice,
+    leverage,
+    liqPrice,
+  ]);
+
+  const handleSubmit = () => {
+    if (disabled) return;
+    onSubmit({
+      orderType,
+      direction,
+      sizeUSD: parseFloat(sizeUSD) || 0,
+      leverage,
+      limitPrice: orderType === "Limit" ? parseFloat(limitPrice) : undefined,
+      takeProfit: tpslEnabled && tpPrice ? parseFloat(tpPrice) : undefined,
+      stopLoss: tpslEnabled && slPrice ? parseFloat(slPrice) : undefined,
+      reduceOnly,
+      tif,
+      marginMode,
+    });
+  };
 
   return (
     <div className="flex h-full flex-col overflow-hidden border-l border-line transition-colors duration-300 ease-[cubic-bezier(0.19,1,0.22,1)] hover:border-white/15 motion-reduce:transition-none">
@@ -112,6 +175,48 @@ export function TerminalOrderForm({
             ))}
           </div>
 
+          {/* Margin mode + TIF row (pro controls) */}
+          <div className="flex gap-1.5">
+            <div className="flex-1">
+              <label className="mb-1 block text-[9px] font-medium text-faint">Margin</label>
+              <div className="flex overflow-hidden rounded border border-line">
+                {MARGIN_MODES.map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => setMarginMode(m)}
+                    className="flex-1 py-1 text-[9px] font-bold capitalize transition-colors active:scale-[0.98] motion-reduce:transform-none"
+                    style={{
+                      background: marginMode === m ? "var(--color-panel-2)" : "transparent",
+                      color: marginMode === m ? "var(--color-ink)" : "var(--color-faint)",
+                    }}
+                  >
+                    {m === "cross" ? "Cross" : "Iso."}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="flex-1">
+              <label className="mb-1 block text-[9px] font-medium text-faint">TIF</label>
+              <div className="flex overflow-hidden rounded border border-line">
+                {TIF_OPTIONS.map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setTif(t)}
+                    className="flex-1 py-1 text-[9px] font-bold transition-colors active:scale-[0.98] motion-reduce:transform-none"
+                    style={{
+                      background: tif === t ? "var(--color-panel-2)" : "transparent",
+                      color: tif === t ? "var(--color-ink)" : "var(--color-faint)",
+                    }}
+                  >
+                    {t === "PostOnly" ? "Post" : t}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
           {/* Limit price */}
           {orderType === "Limit" && (
             <div>
@@ -119,7 +224,14 @@ export function TerminalOrderForm({
                 <label className="text-[10px] font-medium text-faint">Limit Price</label>
                 <span className="text-[10px] text-faint">USD</span>
               </div>
-              <div className="flex items-center overflow-hidden rounded border border-line bg-panel-2">
+              <div
+                className="flex items-center overflow-hidden rounded border bg-panel-2"
+                style={{
+                  borderColor: limitInvalid
+                    ? "color-mix(in srgb, var(--color-danger) 45%, transparent)"
+                    : "var(--color-line)",
+                }}
+              >
                 <input
                   type="number"
                   value={limitPrice}
@@ -127,7 +239,14 @@ export function TerminalOrderForm({
                   placeholder={currentPrice?.toFixed(2) ?? "0.00"}
                   className="flex-1 bg-transparent px-2 py-1.5 text-xs tabular-nums text-ink outline-none"
                 />
-                <span className="border-l border-line px-2 text-[10px] text-faint">USD</span>
+                <button
+                  type="button"
+                  onClick={() => currentPrice && setLimitPrice(currentPrice.toFixed(2))}
+                  className="border-l border-line px-2 py-1.5 text-[9px] font-bold text-acid transition-colors hover:bg-panel"
+                  aria-label="Use last mark price"
+                >
+                  Last
+                </button>
               </div>
             </div>
           )}
@@ -138,7 +257,14 @@ export function TerminalOrderForm({
               <label className="text-[10px] font-medium text-faint">Amount</label>
               <span className="text-[10px] text-faint">USDC</span>
             </div>
-            <div className="flex items-center overflow-hidden rounded border border-line bg-panel-2">
+            <div
+              className="flex items-center overflow-hidden rounded border bg-panel-2"
+              style={{
+                borderColor: overBalance
+                  ? "color-mix(in srgb, var(--color-danger) 45%, transparent)"
+                  : "var(--color-line)",
+              }}
+            >
               <span className="pl-2 text-[10px] text-muted">$</span>
               <input
                 type="number"
@@ -316,6 +442,7 @@ export function TerminalOrderForm({
               ["Liq. Price", liqPrice > 0 ? liqPrice.toFixed(2) : "—"],
               ["Notional", notional > 0 ? formatUSD(notional) : "—"],
               ["Fees (est.)", fee > 0 ? formatUSD(fee) : "—"],
+              ["TIF / Margin", `${tif === "PostOnly" ? "Post" : tif} · ${marginMode === "cross" ? "Cross" : "Iso."}`],
             ].map(([k, v]) => (
               <div key={k} className="flex items-center justify-between">
                 <span className="text-[10px] text-faint">{k}</span>
@@ -324,11 +451,25 @@ export function TerminalOrderForm({
             ))}
           </div>
 
+          {/* Inline validation errors */}
+          {overBalance && (
+            <p
+              className="rounded border px-2 py-1 text-[10px]"
+              style={{
+                color: "var(--color-danger)",
+                background: "color-mix(in srgb, var(--color-danger) 8%, transparent)",
+                borderColor: "color-mix(in srgb, var(--color-danger) 25%, transparent)",
+              }}
+            >
+              Size exceeds available balance (${availableBalance.toLocaleString()}).
+            </p>
+          )}
+
           {/* Submit */}
           <button
             type="button"
-            onClick={onSubmit}
-            disabled={!connected || submitting || !sizeUSD || parseFloat(sizeUSD) <= 0}
+            onClick={handleSubmit}
+            disabled={disabled}
             className="w-full rounded-lg py-3 text-sm font-black tracking-wide transition-all active:scale-[0.98] disabled:opacity-40 motion-reduce:transform-none"
             style={{
               background: isLong ? "var(--color-success)" : "var(--color-danger)",
