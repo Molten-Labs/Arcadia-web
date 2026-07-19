@@ -8,7 +8,6 @@ if (typeof window !== "undefined") {
   console.error = (...args: unknown[]) => {
     const msg = typeof args[0] === "string" ? args[0] : "";
     if (msg.includes("WalletContext without providing one")) return;
-    if (msg.includes("A tree hydrated but some attributes of the server rendered HTML didn't match")) return;
     _consoleError(...args);
   };
 }

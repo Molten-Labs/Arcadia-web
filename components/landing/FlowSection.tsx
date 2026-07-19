@@ -49,7 +49,7 @@ export function FlowSection() {
                     {panel.tag}
                   </span>
                   <h3
-                    className="mb-3.5 origin-left font-display text-[clamp(1.35rem,2.4vw,1.9rem)] font-bold tracking-[-0.02em] text-ink uppercase"
+                    className="mb-3.5 origin-left font-display text-[clamp(1.35rem,2.4vw,1.9rem)] font-extrabold tracking-[-0.02em] text-ink uppercase"
                     style={{ transform: "scaleX(1.04)" }}
                   >
                     {panel.heading}
@@ -88,7 +88,7 @@ export function FlowSection() {
               <div className="group acid-int relative h-full overflow-hidden rounded-[20px] border border-white/10 bg-gradient-to-br from-panel/90 to-void/85 p-[clamp(1.4rem,2.6vw,1.9rem)]">
                 <span
                   aria-hidden
-                  className="pointer-events-none absolute -top-8 right-0 font-display text-[8rem] leading-none font-bold opacity-70 transition-opacity duration-500 ease-[cubic-bezier(0.19,1,0.22,1)] select-none group-hover:opacity-100 motion-reduce:transition-none"
+                  className="pointer-events-none absolute -top-8 right-0 font-display text-[8rem] leading-none font-extrabold opacity-70 transition-opacity duration-500 ease-[cubic-bezier(0.19,1,0.22,1)] select-none group-hover:opacity-100 motion-reduce:transition-none"
                   style={ghostStroke}
                 >
                   {step.n}
@@ -97,7 +97,7 @@ export function FlowSection() {
                   STEP {step.n}
                 </span>
                 <h3
-                  className="mt-3 mb-2.5 origin-left font-display text-[clamp(1.15rem,2vw,1.5rem)] font-bold tracking-[-0.02em] text-ink uppercase"
+                  className="mt-3 mb-2.5 origin-left font-display text-[clamp(1.15rem,2vw,1.5rem)] font-extrabold tracking-[-0.02em] text-ink uppercase"
                   style={{ transform: "scaleX(1.03)" }}
                 >
                   {step.title}

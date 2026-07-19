@@ -173,7 +173,7 @@ export default function TradeHistoryPage() {
 
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h1 className="font-display text-2xl font-bold tracking-tight text-ink text-balance">
+            <h1 className="font-display text-2xl font-extrabold tracking-tight text-ink">
               {`@${trader.handle} // Full Trade History`}
             </h1>
             <p className="mt-1 font-mono text-sm text-faint tabular-nums">

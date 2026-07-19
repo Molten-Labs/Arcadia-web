@@ -26,7 +26,6 @@ import { TerminalOrderBook } from "@/components/pages/trader/TerminalOrderBook";
 import { TerminalOrderForm } from "@/components/pages/trader/TerminalOrderForm";
 import { TerminalTickerBar } from "@/components/pages/trader/TerminalTickerBar";
 import type { Direction, OrderType } from "@/components/pages/trader/terminal-types";
-import type { OrderPreview, SubmittedOrder } from "@/components/pages/trader/terminal-types";
 import { PhoenixProvider, usePhoenix } from "@/lib/phoenix-context";
 import { useArcadiaVault } from "@/lib/use-arcadia-vault";
 import { formatUSD } from "@/lib/types";
@@ -54,10 +53,6 @@ interface ClosedTrade {
 }
 
 const MARKETS = ["BTC-PERP", "SOL-PERP", "ETH-PERP", "ARB-PERP"];
-
-// Snapshot once at module load so demo seed state stays referentially stable
-// across re-renders (also satisfies the react-hooks/purity rule).
-const NOW_SEC = Math.floor(Date.now() / 1000);
 const INTERVALS = ["1m", "5m", "15m", "1H", "4H", "1D"];
 const CHART_TOOLS = [
   { label: "Crosshair tool", icon: Crosshair },
@@ -88,12 +83,12 @@ function TerminalContent() {
   const [sizeUSD, setSizeUSD] = useState("1000");
   const [leverage, setLeverage] = useState(5);
   const [positions, setPositions] = useState<OpenPosition[]>([
-    { id: "demo-1", market: "SOL-PERP", direction: "long", size_usd: 2000, leverage: 5, entry_px: 160.0, opened_at: NOW_SEC - 7200, upnl: 0 },
-    { id: "demo-2", market: "BTC-PERP", direction: "short", size_usd: 3000, leverage: 3, entry_px: 98700, opened_at: NOW_SEC - 3600, upnl: 0 },
+    { id: "demo-1", market: "SOL-PERP", direction: "long", size_usd: 2000, leverage: 5, entry_px: 160.0, opened_at: Math.floor(Date.now() / 1000) - 7200, upnl: 0 },
+    { id: "demo-2", market: "BTC-PERP", direction: "short", size_usd: 3000, leverage: 3, entry_px: 98700, opened_at: Math.floor(Date.now() / 1000) - 3600, upnl: 0 },
   ]);
   const [closedTrades, setClosedTrades] = useState<ClosedTrade[]>([
-    { id: "hist-1", market: "ETH-PERP", direction: "short", size_usd: 1500, leverage: 10, entry_px: 3420, exit_px: 3385, realized_pnl: 153.5, fees_usd: 0.90, opened_at: NOW_SEC - 86400, closed_at: NOW_SEC - 43200, was_liquidated: false },
-    { id: "hist-2", market: "SOL-PERP", direction: "long", size_usd: 2500, leverage: 5, entry_px: 155.2, exit_px: 162.45, realized_pnl: 583.7, fees_usd: 1.50, opened_at: NOW_SEC - 172800, closed_at: NOW_SEC - 86400, was_liquidated: false },
+    { id: "hist-1", market: "ETH-PERP", direction: "short", size_usd: 1500, leverage: 10, entry_px: 3420, exit_px: 3385, realized_pnl: 153.5, fees_usd: 0.90, opened_at: Math.floor(Date.now() / 1000) - 86400, closed_at: Math.floor(Date.now() / 1000) - 43200, was_liquidated: false },
+    { id: "hist-2", market: "SOL-PERP", direction: "long", size_usd: 2500, leverage: 5, entry_px: 155.2, exit_px: 162.45, realized_pnl: 583.7, fees_usd: 1.50, opened_at: Math.floor(Date.now() / 1000) - 172800, closed_at: Math.floor(Date.now() / 1000) - 86400, was_liquidated: false },
   ]);
   const [closingId, setClosingId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -111,7 +106,7 @@ function TerminalContent() {
   const depositRef = useRef<HTMLDivElement>(null);
 
   const [availableBalance] = useState(25000);
-  const [preview, setPreview] = useState<OrderPreview | null>(null);
+  const [accountPnL, setAccountPnL] = useState(737.2);
 
   const symbol = market.replace("-PERP", "");
   const marketStats = phoenix.marketStats[symbol];
@@ -181,47 +176,37 @@ function TerminalContent() {
           return { ...pos, upnl };
         }),
       );
-      }, 2000);
+      setAccountPnL(() => {
+        let posPnL = 0;
+        setPositions((p) => { posPnL = p.reduce((s, pos) => s + (pos.upnl ?? 0), 0); return p; });
+        let closedPnL = 0;
+        setClosedTrades((c) => { closedPnL = c.reduce((s, t) => s + t.realized_pnl, 0); return c; });
+        return posPnL + closedPnL;
+      });
+    }, 2000);
     return () => clearInterval(t);
   }, [phoenix.marketStats]);
 
-  const openPosition = useCallback(
-    (order: SubmittedOrder) => {
-      if (!connected || !currentPrice) return;
-      setSubmitting(true);
-
-      // Liquidation distance mirrors the order form's estimate so the chart
-      // marker and the summary row agree.
-      const liqDist = (currentPrice / order.leverage) * 0.88;
-      const liquidation =
-        order.leverage > 1
-          ? order.direction === "long"
-            ? currentPrice - liqDist
-            : currentPrice + liqDist
-          : undefined;
-
-      setTimeout(() => {
-        setPositions((prev) => [
-          {
-            id: Math.random().toString(36).slice(2, 10),
-            market,
-            direction: order.direction,
-            size_usd: order.sizeUSD,
-            leverage: order.leverage,
-            entry_px: currentPrice,
-            opened_at: Math.floor(Date.now() / 1000),
-            upnl: 0,
-            takeProfit: order.takeProfit,
-            stopLoss: order.stopLoss,
-            liquidation,
-          },
-          ...prev,
-        ]);
-        setSubmitting(false);
-      }, 700);
-    },
-    [connected, currentPrice, market],
-  );
+  const openPosition = useCallback(() => {
+    if (!connected || !currentPrice) return;
+    setSubmitting(true);
+    setTimeout(() => {
+      setPositions((prev) => [
+        {
+          id: Math.random().toString(36).slice(2, 10),
+          market,
+          direction,
+          size_usd: parseFloat(sizeUSD) || 1000,
+          leverage,
+          entry_px: currentPrice,
+          opened_at: Math.floor(Date.now() / 1000),
+          upnl: 0,
+        },
+        ...prev,
+      ]);
+      setSubmitting(false);
+    }, 700);
+  }, [connected, currentPrice, market, direction, sizeUSD, leverage]);
 
   const closePosition = useCallback(
     (id: string) => {
@@ -642,28 +627,15 @@ function TerminalContent() {
             currentPrice={currentPrice}
             fullHeight
             externalCandles={phoenixCandles}
-            preview={preview}
             positions={positions
               .filter((p) => p.market === market)
-              .map((p) => {
-                const liqDist = (p.entry_px / p.leverage) * 0.88;
-                const liquidation =
-                  p.leverage > 1
-                    ? p.direction === "long"
-                      ? p.entry_px - liqDist
-                      : p.entry_px + liqDist
-                    : undefined;
-                return {
-                  id: p.id,
-                  direction: p.direction,
-                  entry_px: p.entry_px,
-                  size_usd: p.size_usd,
-                  leverage: p.leverage,
-                  takeProfit: p.takeProfit,
-                  stopLoss: p.stopLoss,
-                  liquidation,
-                };
-              })}
+              .map((p) => ({
+                id: p.id,
+                direction: p.direction,
+                entry_px: p.entry_px,
+                size_usd: p.size_usd,
+                leverage: p.leverage,
+              }))}
           />
           <div className="pointer-events-none absolute top-3 left-3 select-none" style={{ opacity: 0.18 }}>
             <p className="text-sm font-black text-ink">{coinName}/USD · Perpetual</p>
@@ -687,7 +659,6 @@ function TerminalContent() {
             currentPrice={currentPrice}
             oraclePrice={oraclePrice}
             onSubmit={openPosition}
-            onPreviewChange={setPreview}
             submitting={submitting}
             connected={connected}
             market={market}

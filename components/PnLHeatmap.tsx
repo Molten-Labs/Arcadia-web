@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { DailyPnL } from "@/lib/mock-data";
+import type { DailyPnL } from "@/lib/types";
 
 interface Props {
   data: DailyPnL[];
@@ -168,13 +168,9 @@ export function PnLHeatmap({ data }: Props) {
                   {week.map((cell, di) => (
                     <div
                       key={di}
-                      role="gridcell"
-                      tabIndex={cell.date ? 0 : undefined}
                       title={cell.date ? `${cell.date}: ${cell.pnl != null && cell.pnl !== 0 ? formatPnl(cell.pnl) : "No trades"}` : ""}
                       onMouseEnter={() => cell.date ? setHovered(cell as DailyPnL) : undefined}
                       onMouseLeave={() => setHovered(null)}
-                      onFocus={() => cell.date ? setHovered(cell as DailyPnL) : undefined}
-                      onBlur={() => setHovered(null)}
                       style={{
                         width: 11,
                         height: 11,

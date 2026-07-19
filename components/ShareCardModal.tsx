@@ -87,9 +87,6 @@ export function ShareCardModal({ data, profileUrl, onClose }: ShareCardModalProp
   return (
     <div
       onClick={onClose}
-      onKeyDown={(e) => e.key === "Escape" && onClose()}
-      role="presentation"
-      tabIndex={-1}
       className="fixed inset-0 z-[9000] flex flex-col items-center justify-center gap-7 bg-void/85 p-6 backdrop-blur-xl"
     >
       <div

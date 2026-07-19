@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useWallet } from "@solana/wallet-adapter-react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { Trophy } from "lucide-react";
@@ -133,7 +132,6 @@ function PodiumCard({ entry, rank }: { entry: LeaderboardEntry; rank: 1 | 2 | 3 
 }
 
 export default function LeaderboardPage() {
-  const { publicKey } = useWallet();
   const [tab, setTab] = useState<MetricTab>("traders");
   const { data } = useQuery<LeaderboardEntry[]>({
     queryKey: ["leaderboard"],
@@ -142,7 +140,6 @@ export default function LeaderboardPage() {
 
   const top3 = data?.slice(0, 3) ?? [];
   const rest = data ?? [];
-  const walletId = publicKey?.toBase58() ?? "";
 
   return (
     <div className="relative min-h-full bg-void">
@@ -220,22 +217,23 @@ export default function LeaderboardPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {publicKey ? (
-                    <TableRow className="bg-acid/[0.06] shadow-[inset_2px_0_0_var(--color-acid)] hover:bg-acid/10">
-                      <TableCell className="text-lg font-bold text-acid tabular-nums">—</TableCell>
-                      <TableCell>
-                        <span className="inline-flex items-center gap-2.5">
-                          <Avatar handle={walletId} size={28} chars={2} className="rounded-lg" />
-                          <span className="font-sans font-bold text-ink">You</span>
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-right font-bold text-acid tabular-nums">—</TableCell>
-                      <TableCell className="text-right font-bold text-success tabular-nums">—</TableCell>
-                      <TableCell className="text-right text-ink tabular-nums">—</TableCell>
-                      <TableCell className="text-right text-muted tabular-nums">—</TableCell>
-                      <TableCell className="text-right text-muted tabular-nums">—</TableCell>
-                    </TableRow>
-                  ) : null}
+                  {/* the current user's row */}
+                  <TableRow className="bg-acid/[0.06] shadow-[inset_2px_0_0_var(--color-acid)] hover:bg-acid/10">
+                    <TableCell className="text-lg font-bold text-acid tabular-nums">147</TableCell>
+                    <TableCell>
+                      <span className="inline-flex items-center gap-2.5">
+                        <Avatar handle="darc" size={28} chars={2} className="rounded-lg" />
+                        <span className="font-sans font-bold text-ink">You</span>
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-right font-bold text-acid tabular-nums">642</TableCell>
+                    <TableCell className="text-right font-bold text-success tabular-nums">
+                      $2,044
+                    </TableCell>
+                    <TableCell className="text-right text-ink tabular-nums">54.4%</TableCell>
+                    <TableCell className="text-right text-muted tabular-nums">$12.4M</TableCell>
+                    <TableCell className="text-right text-muted tabular-nums">124</TableCell>
+                  </TableRow>
 
                   {rest.slice(3).map((entry, i) => {
                     const m = rowMetrics(entry);

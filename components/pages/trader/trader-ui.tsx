@@ -88,7 +88,7 @@ export function PageHeader({
       <div className="flex items-center gap-2.5">
         {icon && <span className="text-acid">{icon}</span>}
         <h1
-          className="origin-left font-display text-2xl leading-none font-bold tracking-tight text-ink uppercase"
+          className="origin-left font-display text-2xl leading-none font-extrabold tracking-tight text-ink uppercase"
           style={{ transform: "scaleX(1.04)" }}
         >
           {title}
@@ -151,6 +151,59 @@ export function StatTile({
         </p>
       )}
     </Panel>
+  );
+}
+
+/**
+ * Classification badges shown on trader profile / vault / reputation pages.
+ * Maps the Rust classify engine output to Badge variants.
+ */
+import { Badge } from "@/components/ui/badge";
+import type { TraderClassification } from "@/lib/types";
+
+const BOT_BADGE: Record<string, "success" | "danger" | "secondary"> = {
+  human: "success",
+  bot: "danger",
+  uncertain: "secondary",
+};
+
+const SIZE_BADGE: Record<string, "secondary" | "default" | "verified" | "advanced" | "elite"> = {
+  shrimp: "secondary",
+  fish: "default",
+  dolphin: "verified",
+  shark: "advanced",
+  whale: "elite",
+};
+
+const PROFILE_TONE: Record<string, "default" | "danger" | "success" | "secondary"> = {
+  "HFT / market-maker bot": "danger",
+  "Wash trader / points farmer": "danger",
+  Scalper: "default",
+  "Position / swing holder": "success",
+  "Active trader": "success",
+  Dormant: "secondary",
+  "One-shot punter": "secondary",
+  "No activity": "secondary",
+};
+
+export function ClassificationBadgeSet({ data, className }: { data: TraderClassification; className?: string }) {
+  return (
+    <div className={cn("flex flex-wrap items-center gap-1.5", className)}>
+      <Badge variant={BOT_BADGE[data.bot.verdict] ?? "secondary"}>
+        {data.bot.verdict === "human" ? "human" : data.bot.verdict === "bot" ? "bot" : "uncertain"}
+      </Badge>
+      <Badge variant={SIZE_BADGE[data.size_tier.tier] ?? "secondary"}>
+        {data.size_tier.tier}
+      </Badge>
+      <Badge variant={PROFILE_TONE[data.profile.label] ?? "default"}>
+        {data.profile.label}
+      </Badge>
+      {data.wash.fired > 0 && (
+        <Badge variant="danger">
+          wash-flagged
+        </Badge>
+      )}
+    </div>
   );
 }
 

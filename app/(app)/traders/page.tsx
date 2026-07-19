@@ -90,7 +90,9 @@ export default function TradersPage() {
           <Reveal>
             <Kicker>Trader Marketplace</Kicker>
             <SectionTitle className="mt-4">Back the proven.</SectionTitle>
-
+            <p className="mt-3 max-w-[60ch] font-mono text-sm text-muted tabular-nums">
+              {`${data?.length ?? 0} verified traders // fund any vault with USDC // capacity scales with score`}
+            </p>
           </Reveal>
         </div>
 

@@ -10,11 +10,13 @@ export const LINKS = {
   traders: "/traders",
   leaderboard: "/leaderboard",
   terminal: "/terminal",
+  docs: "#",
 } as const;
 
 export const NAV_LINKS = [
   { label: "Traders", href: LINKS.traders },
   { label: "Leaderboard", href: LINKS.leaderboard },
+  { label: "Docs", href: LINKS.docs },
 ] as const;
 
 /** Trust-strip marquee tokens. `icon` keys map to marks in TrustStrip. */

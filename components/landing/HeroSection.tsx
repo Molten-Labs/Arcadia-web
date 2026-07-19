@@ -13,7 +13,7 @@ import { LINKS, SLASH_PHRASES } from "./data";
 // sets the copy column's width at every breakpoint. Sized so it always fits
 // the column (16vw starved the card column to 8px slivers at 1440px, and a
 // 4.2rem floor clipped the whole copy column on phones).
-const HUGE = "font-display text-[clamp(3.4rem,14.5vw,6.5rem)] lg:text-[clamp(5.5rem,8.75vw,10rem)] leading-[0.82] font-bold tracking-[-0.05em] uppercase";
+const HUGE = "font-display text-[clamp(3.4rem,14.5vw,6.5rem)] lg:text-[clamp(5.5rem,8.75vw,10rem)] leading-[0.82] font-extrabold tracking-[-0.05em] uppercase";
 
 const acidGlow =
   "0 0 34px color-mix(in srgb, var(--color-acid) 60%, transparent), 0 0 70px color-mix(in srgb, var(--color-acid) 30%, transparent)";
@@ -22,7 +22,7 @@ function Avatar({ letter }: { letter: string }) {
   return (
     <span
       aria-hidden
-      className="grid h-10 w-10 place-items-center rounded-xl font-display text-base font-bold text-void transition-transform duration-300 ease-[cubic-bezier(0.19,1,0.22,1)] group-hover:-rotate-6 group-hover:scale-105 motion-reduce:transition-none motion-reduce:group-hover:transform-none"
+      className="grid h-10 w-10 place-items-center rounded-xl font-display text-base font-extrabold text-void transition-transform duration-300 ease-[cubic-bezier(0.19,1,0.22,1)] group-hover:-rotate-6 group-hover:scale-105 motion-reduce:transition-none motion-reduce:group-hover:transform-none"
       style={{
         background: ORB_GRADIENT,
         boxShadow: "0 0 14px color-mix(in srgb, var(--color-acid) 40%, transparent)",
@@ -133,6 +133,13 @@ export function HeroSection() {
 
             <div className="max-w-[52ch]">
               <Reveal delay={160}>
+                <p className="mb-4 inline-flex items-center gap-2.5 font-mono text-[0.72rem] tracking-[0.16em] text-muted uppercase">
+                  <span
+                    className="acid-animate h-2 w-2 rounded-full bg-success"
+                    style={{ boxShadow: "0 0 10px var(--color-success)", animation: "acid-pulse 2s infinite" }}
+                  />
+                  Verified reputation / On-chain allocation
+                </p>
                 <p className="mb-7 text-[clamp(1.05rem,1.7vw,1.28rem)] leading-[1.55] text-muted">
                   Arcadia turns real{" "}
                   <b className="font-semibold text-ink">on-chain trading history</b>{" "}
@@ -256,7 +263,7 @@ export function HeroSection() {
           <Marquee speed={26} pauseOnHover={false} className="py-4">
             {SLASH_PHRASES.map((phrase) => (
               <Fragment key={phrase}>
-                <span className="flex items-center px-5 font-display text-[clamp(1.1rem,2.4vw,1.9rem)] font-bold tracking-[-0.02em] uppercase">
+                <span className="flex items-center px-5 font-display text-[clamp(1.1rem,2.4vw,1.9rem)] font-extrabold tracking-[-0.02em] uppercase">
                   {phrase}
                 </span>
                 <MoveRight aria-hidden className="mx-1 size-5 opacity-50" />

@@ -68,19 +68,6 @@ export interface PositionMarker {
   entry_px: number;
   size_usd: number;
   leverage: number;
-  takeProfit?: number;
-  stopLoss?: number;
-  liquidation?: number;
-}
-
-/** Live preview snapshot rendered while the user edits the order form. */
-export interface ChartPreview {
-  direction: "long" | "short";
-  orderType: "Market" | "Limit" | "TP/SL";
-  limitPrice?: number;
-  takeProfit?: number;
-  stopLoss?: number;
-  liquidation?: number;
 }
 
 interface Props {
@@ -90,10 +77,9 @@ interface Props {
   fullHeight?: boolean;
   positions?: PositionMarker[];
   externalCandles?: { time: number; open: number; high: number; low: number; close: number }[];
-  preview?: ChartPreview | null;
 }
 
-export function TvChart({ market, currentPrice, height = 360, fullHeight = false, positions = [], externalCandles, preview }: Props) {
+export function TvChart({ market, currentPrice, height = 360, fullHeight = false, positions = [], externalCandles }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
@@ -202,160 +188,44 @@ export function TvChart({ market, currentPrice, height = 360, fullHeight = false
     };
   }, [candles, height, fullHeight]);
 
-  // Sync price lines with open positions (entry + TP + SL + liquidation)
+  // Sync price lines with open positions
   useEffect(() => {
     const series = seriesRef.current;
     if (!series) return;
 
     const longColor  = readToken("--color-success", "#34E29B");
     const shortColor = readToken("--color-danger",  "#FF3B6B");
-    const tpColor   = "#34E29B";
-    const slColor    = "#FF3B6B";
-    const liqColor   = "#d8a93a";
 
     const existing = priceLinesRef.current;
+    const activeIds = new Set(positions.map((p) => p.id));
 
-    // Compute the set of keys that should exist (positions + their TP/SL/liq).
-    const wantedKeys = new Set<string>();
-    for (const pos of positions) {
-      wantedKeys.add(pos.id);
-      if (pos.takeProfit && pos.takeProfit > 0) wantedKeys.add(`${pos.id}:tp`);
-      if (pos.stopLoss && pos.stopLoss > 0) wantedKeys.add(`${pos.id}:sl`);
-      if (pos.liquidation && pos.liquidation > 0) wantedKeys.add(`${pos.id}:liq`);
-    }
-
-    // Remove stale lines (any key not wanted and not a preview).
+    // Remove lines for closed positions
     for (const [id, line] of existing) {
-      if (id.startsWith("preview:")) continue;
-      if (!wantedKeys.has(id)) {
+      if (!activeIds.has(id)) {
         try { series.removePriceLine(line); } catch { /* already removed */ }
         existing.delete(id);
       }
     }
 
-    // Add/update lines for each position. We recreate child lines if the
-    // underlying price changed since the last render.
+    // Add lines for new positions
     for (const pos of positions) {
-      const isLong = pos.direction === "long";
-      const color = isLong ? longColor : shortColor;
-      const label = `${isLong ? "▲ LONG" : "▼ SHORT"} ${pos.leverage}x · $${pos.size_usd.toLocaleString()}`;
-
       if (!existing.has(pos.id)) {
+        const isLong = pos.direction === "long";
+        const color = isLong ? longColor : shortColor;
+        const label = `${isLong ? "▲ LONG" : "▼ SHORT"} ${pos.leverage}x · $${pos.size_usd.toLocaleString()}`;
+
         const line = series.createPriceLine({
           price: pos.entry_px,
           color,
-          lineWidth: 2,
-          lineStyle: LineStyle.Solid,
+          lineWidth: 1,
+          lineStyle: LineStyle.Dashed,
           axisLabelVisible: true,
           title: label,
         });
         existing.set(pos.id, line);
       }
-
-      const ensureChild = (key: string, price: number, c: string, style: LineStyle, title: string) => {
-        const prev = existing.get(key);
-        // lightweight-charts doesn't expose a price setter on price lines,
-        // so we recreate the line whenever the price changes.
-        if (prev) {
-          try { series.removePriceLine(prev); } catch { /* noop */ }
-        }
-        const line = series.createPriceLine({
-          price,
-          color: c,
-          lineWidth: 1,
-          lineStyle: style,
-          axisLabelVisible: true,
-          title,
-        });
-        existing.set(key, line);
-      };
-
-      if (pos.takeProfit && pos.takeProfit > 0) {
-        ensureChild(`${pos.id}:tp`, pos.takeProfit, tpColor, LineStyle.Dashed, `TP ${label}`);
-      } else {
-        const prev = existing.get(`${pos.id}:tp`);
-        if (prev) {
-          try { series.removePriceLine(prev); } catch { /* noop */ }
-          existing.delete(`${pos.id}:tp`);
-        }
-      }
-
-      if (pos.stopLoss && pos.stopLoss > 0) {
-        ensureChild(`${pos.id}:sl`, pos.stopLoss, slColor, LineStyle.Dashed, `SL ${label}`);
-      } else {
-        const prev = existing.get(`${pos.id}:sl`);
-        if (prev) {
-          try { series.removePriceLine(prev); } catch { /* noop */ }
-          existing.delete(`${pos.id}:sl`);
-        }
-      }
-
-      if (pos.liquidation && pos.liquidation > 0) {
-        ensureChild(`${pos.id}:liq`, pos.liquidation, liqColor, LineStyle.Dotted, `Liq ${label}`);
-      } else {
-        const prev = existing.get(`${pos.id}:liq`);
-        if (prev) {
-          try { series.removePriceLine(prev); } catch { /* noop */ }
-          existing.delete(`${pos.id}:liq`);
-        }
-      }
     }
   }, [positions]);
-
-  // Live preview lines: dashed and slightly transparent so they read as
-  // "what would happen" rather than committed orders. Recreated every paint
-  // because the underlying numeric values change as the user types.
-  useEffect(() => {
-    const series = seriesRef.current;
-    if (!series) return;
-
-    const existing = priceLinesRef.current;
-
-    // Clear old previews.
-    for (const key of [...existing.keys()]) {
-      if (key.startsWith("preview:")) {
-        const line = existing.get(key);
-        if (line) {
-          try { series.removePriceLine(line); } catch { /* noop */ }
-        }
-        existing.delete(key);
-      }
-    }
-
-    if (!preview) return;
-
-    const half = (hex: string) => hex; // passthrough; alpha added via color-mix below
-    void half;
-
-    const make = (key: string, price: number, hex: string, title: string) => {
-      if (!price || price <= 0) return;
-      const line = series.createPriceLine({
-        price,
-        color: withAlpha(hex, 0.55),
-        lineWidth: 1,
-        lineStyle: LineStyle.LargeDashed,
-        axisLabelVisible: true,
-        title,
-      });
-      existing.set(key, line);
-    };
-
-    // Entry / reference line for previews: a thin marker at the limit price
-    // (orange) so the user can see where a limit order would rest.
-    if (preview.orderType === "Limit" && preview.limitPrice) {
-      make("preview:limit", preview.limitPrice, "#ffb84d", `Limit ▶ ${preview.limitPrice.toFixed(2)}`);
-    }
-
-    if (preview.takeProfit) {
-      make("preview:tp", preview.takeProfit, "#34E29B", `TP ▶ ${preview.takeProfit.toFixed(2)}`);
-    }
-    if (preview.stopLoss) {
-      make("preview:sl", preview.stopLoss, "#FF3B6B", `SL ▶ ${preview.stopLoss.toFixed(2)}`);
-    }
-    if (preview.liquidation) {
-      make("preview:liq", preview.liquidation, "#d8a93a", `Liq ▶ ${preview.liquidation.toFixed(2)}`);
-    }
-  }, [preview]);
 
   // Live-tick: update the last candle's close/high/low
   useEffect(() => {
