@@ -11,13 +11,14 @@ export const LINKS = {
   leaderboard: "/leaderboard",
   terminal: "/terminal",
   waitlist: "/waitlist",
-  docs: "#",
+  docs: "https://arcadia-7fb42599.mintlify.site/introduction",
 } as const;
 
 export const NAV_LINKS = [
   { label: "Traders", href: LINKS.traders },
   { label: "Leaderboard", href: LINKS.leaderboard },
   { label: "Demo", href: LINKS.terminal },
+  { label: "Docs", href: LINKS.docs },
 ] as const;
 
 /** Trust-strip marquee tokens. `icon` keys map to marks in TrustStrip. */
@@ -128,7 +129,7 @@ export const SCORE_BREAKDOWN = [
   { label: "Track record depth", weight: 20, value: 84 },
 ] as const;
 
-type TierKey = "verified" | "established" | "advanced" | "elite";
+type TierKey = "verified" | "established" | "advanced" | "elite" | "apex";
 
 export const TIERS: {
   key: TierKey;
@@ -136,10 +137,11 @@ export const TIERS: {
   criteria: string;
   share: string;
 }[] = [
-  { key: "verified", name: "Verified", criteria: "All scores", share: "20% profit share" },
-  { key: "established", name: "Established", criteria: "Score >= 700", share: "25%" },
-  { key: "advanced", name: "Advanced", criteria: "Score >= 800", share: "30%" },
-  { key: "elite", name: "Elite", criteria: "Score >= 900", share: "35%" },
+  { key: "verified", name: "Verified", criteria: "Score 100+", share: "20% profit share" },
+  { key: "established", name: "Established", criteria: "Score 250+", share: "25%" },
+  { key: "advanced", name: "Advanced", criteria: "Score 500+", share: "30%" },
+  { key: "elite", name: "Elite", criteria: "Score 750+", share: "35%" },
+  { key: "apex", name: "Apex", criteria: "Score 950+", share: "40%" },
 ];
 
 export const TWO_SIDES = {
@@ -215,6 +217,7 @@ export const TIER_DOT: Record<TierKey, string> = {
   established: "bg-tier-established",
   advanced: "bg-tier-advanced",
   elite: "bg-tier-elite",
+  apex: "bg-tier-apex",
 };
 
 /** Map an API tier label to the Badge/tier-token key. */
