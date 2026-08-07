@@ -27,7 +27,7 @@ function AvatarCell({ handle }: { handle: string }) {
   return (
     <span
       aria-hidden
-      className="grid h-7 w-7 place-items-center rounded-lg font-display text-[0.72rem] font-extrabold text-void"
+      className="grid h-7 w-7 place-items-center rounded-lg font-display text-[0.72rem] font-bold text-void"
       style={{ background: ORB_GRADIENT }}
     >
       {handle.slice(0, 1).toUpperCase()}
@@ -73,7 +73,9 @@ function LiveLeaderboardInner() {
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
               <Kicker>Live Leaderboard</Kicker>
-              <SectionHeading className="mt-4">The proven, ranked.</SectionHeading>
+              <SectionHeading className="mt-4 !text-[clamp(1.6rem,4.2vw,3rem)]">
+                The proven, ranked.
+              </SectionHeading>
             </div>
             <Link
               href={LINKS.leaderboard}

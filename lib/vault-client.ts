@@ -10,7 +10,7 @@
 import type { Connection, PublicKey } from "@solana/web3.js";
 import { AnchorProvider, Program } from "@coral-xyz/anchor";
 import type { AnchorWallet } from "./use-wallet-compat";
-import { ARCADIA_IDL, type ArcadiaIdl } from "./arcadia-idl";
+import { getArcadiaIdl, type ArcadiaIdl } from "./arcadia-idl";
 import { getStoredToken } from "./storage";
 import {
   decodePlatformConfig,
@@ -119,23 +119,5 @@ export function makeArcadiaProgram(
   wallet: AnchorWallet,
 ): Program<ArcadiaIdl> {
   const provider = new AnchorProvider(connection, wallet, { commitment: "confirmed" });
-  return new Program<ArcadiaIdl>(ARCADIA_IDL, provider);
-}
-
-/* ── Backend event push (best-effort indexer notification) ──────────── */
-
-export async function pushEvent(event: Record<string, unknown>): Promise<void> {
-  const token = getStoredToken();
-  try {
-    await fetch("/api/v1/events", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-      body: JSON.stringify({ events: [event] }),
-    });
-  } catch {
-    // best-effort: the indexer catches up from chain state
-  }
+  return new Program<ArcadiaIdl>(getArcadiaIdl(), provider);
 }

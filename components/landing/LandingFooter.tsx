@@ -14,7 +14,7 @@ export function LandingFooter() {
             <Link
               href={LINKS.home}
               aria-label="Arcadia home"
-              className="flex items-center gap-2.5 font-display text-xl font-extrabold tracking-[-0.03em] text-ink uppercase"
+              className="flex items-center gap-2.5 font-display text-xl font-bold tracking-[-0.03em] text-ink uppercase"
             >
               <LogoMark />
               Arcadia
@@ -38,6 +38,20 @@ export function LandingFooter() {
           <p className="mt-8 border-t border-white/10 pt-5 font-mono text-[0.8rem] tracking-[0.06em] text-faint">
             <span className="text-acid">Proof replaces promises</span> / (c) 2026 Arcadia
           </p>
+          <div className="mt-4 flex flex-wrap items-center gap-4 font-mono text-[0.78rem] tracking-[0.08em] text-muted uppercase">
+            <Link
+              href="/privacy"
+              className="transition-colors hover:text-ink focus-visible:text-ink motion-reduce:transition-none"
+            >
+              Privacy
+            </Link>
+            <Link
+              href="/terms"
+              className="transition-colors hover:text-ink focus-visible:text-ink motion-reduce:transition-none"
+            >
+              Terms
+            </Link>
+          </div>
         </Container>
       </div>
     </footer>

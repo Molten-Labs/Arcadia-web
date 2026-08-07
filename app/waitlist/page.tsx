@@ -4,6 +4,7 @@ import { ArrowLeft, BarChart3, Shield, TrendingUp, Zap } from "lucide-react";
 import { DriftBlobs, NoiseOverlay, Reveal } from "@/components/acid";
 import { Container, Kicker, SectionHeading } from "@/components/landing/bits";
 import { WaitlistForm } from "@/components/waitlist/WaitlistForm";
+import { WaitlistProviders } from "@/components/waitlist/WaitlistProviders";
 
 const BENEFITS = [
   { icon: BarChart3, title: "verify your track record", desc: "your history becomes a portable score. investors see it, not your word for it." },
@@ -45,7 +46,7 @@ export default function WaitlistPage() {
             <div>
               <Reveal><Kicker>private beta</Kicker></Reveal>
               <Reveal delay={80}>
-                <h1 className="mt-5 font-display text-[clamp(2.5rem,8vw,5rem)] leading-[0.9] font-extrabold tracking-[-0.04em] text-ink uppercase">
+                <h1 className="mt-5 font-display text-[clamp(2.5rem,8vw,5rem)] leading-none font-bold tracking-[-0.04em] text-ink uppercase">
                   turn trading<br /><span className="text-acid">into capital.</span>
                 </h1>
               </Reveal>
@@ -61,7 +62,7 @@ export default function WaitlistPage() {
               <Reveal delay={240}>
                 <div className="mt-10 grid gap-3 sm:grid-cols-3">
                   {BENEFITS.map((b) => (
-                    <div key={b.title} className="rounded-xl border border-white/10 bg-panel/60 p-4 backdrop-blur-sm">
+                    <div key={b.title} className="rounded-xl border border-white/10 bg-panel p-4">
                       <b.icon className="mb-2 size-4 text-acid" aria-hidden />
                       <h3 className="mb-1 text-sm font-bold text-ink">{b.title}</h3>
                       <p className="text-xs leading-relaxed text-muted">{b.desc}</p>
@@ -73,8 +74,10 @@ export default function WaitlistPage() {
 
             <Reveal delay={240}>
               <div className="rounded-2xl border border-line bg-panel p-5 sm:p-6">
-                <p className="mb-4 font-display text-lg font-extrabold text-ink">join the waitlist</p>
-                <WaitlistForm source="waitlist-page" />
+                <p className="mb-4 font-display text-lg font-bold text-ink">join the waitlist</p>
+                <WaitlistProviders>
+                  <WaitlistForm source="waitlist-page" />
+                </WaitlistProviders>
               </div>
             </Reveal>
           </div>
@@ -90,12 +93,12 @@ export default function WaitlistPage() {
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {HOW_IT_WORKS.map((step) => (
                 <Reveal key={step.n} delay={160}>
-                  <div className="group acid-int rounded-[18px] border border-white/10 bg-gradient-to-br from-panel/90 to-void/85 p-[1.375rem] h-full">
+                  <div className="group acid-int rounded-xl border border-white/10 bg-panel p-3 h-full">
                     <span className="mb-3.5 grid h-[34px] w-[34px] place-items-center rounded-[10px] bg-acid font-mono text-sm font-bold text-void transition-transform duration-300 group-hover:scale-105">
                       {step.n}
                     </span>
-                    <h4 className="mb-2 text-[1.02rem] leading-[1.3] font-bold text-ink">{step.title}</h4>
-                    <p className="text-[0.92rem] text-muted">{step.body}</p>
+                    <h4 className="mb-2 text-sm leading-[1.3] font-bold text-ink">{step.title}</h4>
+                    <p className="text-sm text-muted">{step.body}</p>
                   </div>
                 </Reveal>
               ))}

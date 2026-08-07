@@ -1,7 +1,9 @@
 /**
  * Arcadia Vault — Anchor IDL (hand-generated from source)
- * Program ID: FPoAMRkM3kXfuvFn1iC2cM8B554KfnaPjibjLH31CHtd
+ * Program ID is cluster-aware — see getArcadiaIdl().
  */
+import { getProgramId } from "./arcadia-sdk";
+
 export const IDL = {
   address: "FPoAMRkM3kXfuvFn1iC2cM8B554KfnaPjibjLH31CHtd",
   metadata: {
@@ -43,7 +45,10 @@ export const IDL = {
         { name: "tokenProgram" },
         { name: "rent", address: "SysvarRent111111111111111111111111111111111" },
       ],
-      args: [{ name: "maxLeverage", type: "u8" }],
+      args: [
+        { name: "maxLeverage", type: "u8" },
+        { name: "maxDrawdownBps", type: "u16" },
+      ],
     },
     {
       name: "setCapacity",
@@ -102,7 +107,7 @@ export const IDL = {
         { name: "authority", signer: true },
         { name: "config", pda: { seeds: [{ kind: "const", value: [112, 108, 97, 116, 102, 111, 114, 109] }] } },
         { name: "profile", writable: true },
-        { name: "owner" },
+        { name: "owner", writable: true },
         { name: "investorAccount", writable: true, pda: { seeds: [{ kind: "const", value: [105, 110, 118, 101, 115, 116, 111, 114] }, { kind: "account", path: "owner" }] } },
         { name: "position", writable: true, pda: { seeds: [{ kind: "const", value: [112, 111, 115, 105, 116, 105, 111, 110] }, { kind: "account", path: "owner" }, { kind: "account", path: "profile" }] } },
         { name: "baseMint" },
@@ -291,6 +296,7 @@ export const IDL = {
           { name: "status",           type: "u8" },
           { name: "scoreTier",        type: "u8" },
           { name: "maxLeverage",      type: "u8" },
+          { name: "maxDrawdownBps",   type: "u16" },
           { name: "bump",             type: "u8" },
         ],
       },
@@ -340,3 +346,13 @@ export type ArcadiaIdl = DeepMutable<typeof IDL>;
 
 /** The IDL value cast to its mutable type, for `new Program(ARCADIA_IDL, …)`. */
 export const ARCADIA_IDL = IDL as ArcadiaIdl;
+
+/**
+ * Return the IDL with the address set to the currently-configured
+ * program ID (reads NEXT_PUBLIC_ARCADIA_PROGRAM_ID, falls back to devnet).
+ * Use this for `new Program(getArcadiaIdl(), provider)` so the address
+ * is always correct for the active cluster.
+ */
+export function getArcadiaIdl(): ArcadiaIdl {
+  return { ...IDL, address: getProgramId().toBase58() } as ArcadiaIdl;
+}

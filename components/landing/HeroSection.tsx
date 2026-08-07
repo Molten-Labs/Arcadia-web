@@ -7,19 +7,20 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Container } from "./bits";
 import { ORB_GRADIENT } from "./LogoMark";
+import { RadarChart } from "./RadarChart";
 import { LINKS } from "./data";
 
 // "PROVE" is one unbreakable word ~5.7x the font-size wide; its min-content
 // sets the copy column's width at every breakpoint. Sized so it always fits
 // the column (16vw starved the card column to 8px slivers at 1440px, and a
 // 4.2rem floor clipped the whole copy column on phones).
-const HUGE = "font-display text-[clamp(3.4rem,14.5vw,6.5rem)] lg:text-[clamp(5.5rem,8.75vw,10rem)] leading-[0.82] font-extrabold tracking-[-0.05em] uppercase";
+const HUGE = "font-display text-[clamp(3.4rem,14.5vw,6.5rem)] lg:text-[clamp(5.5rem,8.75vw,10rem)] leading-[0.82] font-bold tracking-[-0.05em] uppercase";
 
 function Avatar({ letter }: { letter: string }) {
   return (
     <span
       aria-hidden
-      className="grid h-10 w-10 place-items-center rounded-xl font-display text-base font-extrabold text-void transition-transform duration-300 ease-[cubic-bezier(0.19,1,0.22,1)] group-hover:-rotate-6 group-hover:scale-105 motion-reduce:transition-none motion-reduce:group-hover:transform-none"
+      className="grid h-10 w-10 place-items-center rounded-xl font-display text-base font-bold text-void transition-transform duration-300 ease-[cubic-bezier(0.19,1,0.22,1)] group-hover:-rotate-6 group-hover:scale-105 motion-reduce:transition-none motion-reduce:group-hover:transform-none"
       style={{
         background: ORB_GRADIENT,
         boxShadow: "0 0 14px color-mix(in srgb, var(--color-acid) 40%, transparent)",
@@ -93,16 +94,6 @@ export function HeroSection() {
         <div className="grid items-center gap-10 lg:grid-cols-[1.15fr_minmax(360px,0.85fr)] lg:gap-14">
           {/* Copy column */}
           <div>
-            <Reveal>
-              <span className="inline-flex flex-wrap items-center gap-2.5 rounded-full border border-acid/20 bg-acid/[0.04] px-3.5 py-2 font-mono text-[clamp(0.62rem,1.3vw,0.75rem)] tracking-[0.18em] text-acid uppercase">
-                <span
-                  className="acid-animate h-2 w-2 rounded-full bg-acid"
-                  style={{ boxShadow: "0 0 10px var(--color-acid)", animation: "acid-pulse 2s infinite" }}
-                />
-                Arcadia // Proof-of-Performance Protocol / Online
-              </span>
-            </Reveal>
-
             <Reveal delay={80}>
               <h1 aria-label="Prove it." className="relative my-8">
                 <ChromeText as="span" className={`block origin-left ${HUGE}`}>
@@ -114,7 +105,7 @@ export function HeroSection() {
               </h1>
             </Reveal>
 
-            <div className="max-w-[52ch]">
+            <div className="max-w-[680px]">
               <Reveal delay={160}>
                 <p className="mb-4 inline-flex items-center gap-2.5 font-mono text-[0.72rem] tracking-[0.16em] text-muted uppercase">
                   <span
@@ -132,14 +123,14 @@ export function HeroSection() {
 
                 <Reveal delay={240}>
                   <div className="flex flex-wrap gap-4">
-                    <AcidButton asChild variant="chrome">
-                      <Link href={LINKS.terminal}>
-                        Try Demo <ArrowRight />
-                      </Link>
-                    </AcidButton>
                     <AcidButton asChild variant="acid">
                       <Link href={LINKS.waitlist}>
                         Join Waitlist <Circle className="fill-current" />
+                      </Link>
+                    </AcidButton>
+                    <AcidButton asChild variant="chrome">
+                      <Link href={LINKS.terminal}>
+                        Try Demo <ArrowRight />
                       </Link>
                     </AcidButton>
                   </div>
@@ -215,21 +206,13 @@ export function HeroSection() {
 
                 {/* Reputation inputs */}
                 <HeroTile index="04" label="Reputation inputs" className="sm:translate-y-5">
-                  <div className="flex flex-col gap-2.5">
-                    {[
+                  <RadarChart
+                    metrics={[
                       { label: "Risk-adj return", value: 91 },
                       { label: "Consistency", value: 88 },
                       { label: "Drawdown ctrl", value: 72 },
-                    ].map((row) => (
-                      <div key={row.label} className="grid grid-cols-[1fr_auto] items-center gap-x-2 gap-y-1.5">
-                        <span className="font-mono text-[0.7rem] text-muted">{row.label}</span>
-                        <span className="font-mono text-[0.76rem] text-ink tabular-nums">{row.value}</span>
-                        <div className="col-span-2">
-                          <StaticBar pct={row.value} />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                    ]}
+                  />
                 </HeroTile>
               </div>
             </div>
